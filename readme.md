@@ -38,7 +38,7 @@ If we consider the following entry:
 			'regex': r'(\d{2}\/\d{2}\/\d{4}\s\s\d{2}\:\d{2})',
 			'strftime': '%d/%m/%Y  %H:%M'
 		}
-	},
+	}
 
 This entry allows us to dissect the Windows dir command output in UK formatted time. The regex field allows the script to recognise a date in the line, and the strftime parser is then run over that regex output to get a python datetime object.
 If it is possible to have two types of date/time formats in a file then additional formats need to be used:
