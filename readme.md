@@ -1,6 +1,6 @@
 # Timestomper
 
-This app converts timestamps in free text files, line-by-line. It was made to combat the non-standardised date/time fields tools output.
+This app converts timestamps in text files, line-by-line. It was made to combat the non-standardised date/time fields tools output.
 
 Give it an input file (\-\-infile) and the format type of dates and/or times in that file, then an output format (in the style of a python datetime.strftime - examples can be found in the strftime.md file).
 
