@@ -1,0 +1,18 @@
+ 0 drwxrwxr-x+ 66 root  admin   2.2K  6 Mar 22:54 Applications/
+ 0 drwxr-xr-x+ 66 root  wheel   2.2K 27 Nov 20:07 Library/
+ 0 drwxr-xr-x@  2 root  wheel    68B 22 Aug  2015 Network/
+ 0 drwxr-xr-x@  4 root  wheel   136B 13 Dec 23:53 System/
+ 0 drwxr-xr-x   6 root  admin   204B 18 Oct  2016 Users/
+ 0 drwxrwxrwt@  4 root  admin   136B  6 Mar 23:11 Volumes/
+ 0 drwxr-xr-x@ 39 root  wheel   1.3K 13 Dec 23:53 bin/
+ 0 drwxrwxr-t@  2 root  admin    68B 22 Aug  2015 cores/
+15 dr-xr-xr-x   3 root  wheel   7.4K 10 Feb 17:41 dev/
+ 8 lrwxr-xr-x@  1 root  wheel    11B  7 Nov  2015 etc -> private/etc
+ 2 dr-xr-xr-x   2 root  wheel     1B  6 Mar 23:15 home/
+ 8 -rw-r--r--@  1 root  wheel   313B 23 Aug  2015 installer.failurerequests
+ 2 dr-xr-xr-x   2 root  wheel     1B  6 Mar 23:15 net/
+ 0 drwxr-xr-x@  6 root  wheel   204B  7 Nov  2015 private/
+ 0 drwxr-xr-x@ 59 root  wheel   2.0K 13 Dec 23:53 sbin/
+ 8 lrwxr-xr-x@  1 root  wheel    11B  7 Nov  2015 tmp -> private/tmp
+ 0 drwxr-xr-x@ 13 root  wheel   442B  8 Nov  2015 usr/
+ 8 lrwxr-xr-x@  1 root  wheel    11B  7 Nov  2015 var -> private/var
