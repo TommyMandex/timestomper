@@ -31,7 +31,6 @@ load_parser.add_argument('--ignore', action='store_true', required=False, help='
 load_parser = subparsers.add_parser('timesketch')
 
 args = parser.parse_args()
-
 method = sys.argv[1]
 
 
