@@ -22,11 +22,12 @@ enquire_parser = subparsers.add_parser('enquire')
 enquire_parser.add_argument('-f', '--formats', action='store_true', required=True, help='Show available formats')
 
 load_parser = subparsers.add_parser('load')
-load_parser.add_argument('--infile', type=str, required=True, nargs='+', help='File to parse')
-load_parser.add_argument('-f', '--format', type=str, required=True, nargs='+', help='Type of formatting that will be found in the file')
-load_parser.add_argument('-o', '--outformat', type=str, required=True, nargs='+', help='Translate the format to this date format - you can get a list of available formats using --formats')
+load_parser.add_argument('--infile', type=str, required=True, help='File to parse')
+load_parser.add_argument('-f', '--informat', type=str, required=True, nargs='+', help='Type of formatting that will be found in the file')
+load_parser.add_argument('-o', '--outformat', type=str, required=True, help='Translate the format to this date format - you can get a list of available formats using --formats')
 load_parser.add_argument('--outfile', type=str, required=False, default=None, help='Output to the changed lines to this file')
-load_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore no matches - can be used with free text files - potentially dangerous')
+load_parser.add_argument('--printall', action='store_true', required=False, help='Ignore lines with no matches (printall) - can be used with free text files - potentially dangerous')
+load_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore errors and continue parsing - only output matching lines')
 
 load_parser = subparsers.add_parser('timesketch')
 
@@ -40,13 +41,75 @@ def load(inFile):
 
 		with open(inFile) as fp:
 			for line_no, line in enumerate(fp):
-				yield (line_no, line)
+				yield (line_no, line.rstrip())
 	else:
 		line_no = 0
 		for line in sys.stdin:
-			yield (line_no, line)
+			yield (line_no, line.rstrip())
 			line_no += 1
 
+def mod_ts(line, inFmt, outFmt, printall, ignore):
+
+	line_no, line = line
+
+	matches = []
+
+	for i, candidate in inFmt.items():
+
+		regex = candidate['regex']
+		strftime = candidate['strftime']
+
+		match = re.findall(regex, line)
+
+		if len(match) > 1:
+			if not ignore:
+				raise MatchError('Too many matches in line: {}'.format(line_no))
+			else:
+				return False
+		elif len(match) == 1:
+			matches.append({'ts':match[0], 'strftime':strftime})
+
+		# Test to see if there are multiple matches
+		if len(matches) > 1:
+			if not ignore:
+				raise MatchError('Multiple matches for line: {}'.format(line_no))
+			else:
+				return False
+		elif len(matches) < 1:
+
+			if printall:
+				return line
+			else:
+				if not ignore:
+					raise MatchError('No matches for line: {}'.format(line_no))
+				else:
+					return False
+
+		# Format the times
+		match = matches[0]
+		ts_old = match['ts']
+
+		try:
+			ts_new = datetime.strptime(ts_old, match['strftime'])
+		except ValueError as e:
+			if not ignore:
+				raise FormatError(e)
+			else:
+				return False
+
+		# Some timestamps dont have the year if it is the current, so set to current
+		if ts_new.year == 1900:
+			ts_new = ts_new.replace(year=datetime.now().year)
+
+		if outFmt in out_formats:
+			ts_new = ts_new.strftime(out_formats[outFmt])
+		else:
+			ts_new = ts_new.strftime(outFmt)
+
+		# Now to replace the timestamp
+		new_line = line.replace(ts_old, ts_new)
+
+		return new_line
 
 
 if __name__ == '__main__':
@@ -68,16 +131,29 @@ if __name__ == '__main__':
 
 	elif method == 'load':
 
-		if not len(args.format) == len(args.outformat):
-			print('No same amount of input and output formats')
+
+		# Check informat are valid and assign
+		try:
+			args.informat = in_formats[args.informat]
+		except KeyError as e:
+			raise FormatError('No such formatter: {}'.format(args.informat))
+			exit(0)
+
+		if args.outfile:
+			print('Opening file: {}'.format(args.outfile))
+			write_file = open(args.outfile, 'w')
 
 
 		for file in args.infile:
 			for line in load(file):
-				
 
+				new_line = mod_ts(line, args.informat, args.outformat, printall=args.printall, ignore=args.ignore)
+				if new_line:
+					print(new_line)
 
-
+		if args.outfile:
+			print('Closing file: {}'.format(args.outfile))
+			write_file.close()
 
 
 
