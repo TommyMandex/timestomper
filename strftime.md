@@ -1,3 +1,5 @@
+From: http://strftime.org/
+
 | Code | Meaning | Example |
 | --- | --- | --- |
 | `%a` | Weekday as locale's abbreviated name. | `Mon` |
