@@ -1,4 +1,4 @@
-Taken from: http://strftime.org/
+From: http://strftime.org/
 
 | Code | Meaning | Example |
 | --- | --- | --- |
