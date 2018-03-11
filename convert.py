@@ -26,13 +26,17 @@ enquire_parser = subparsers.add_parser('enquire')
 enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search types')
 
 load_parser = subparsers.add_parser('load')
-load_parser.add_argument('--infile', type=str, required=True, nargs='+', help='File to parse')
+load_parser.add_argument('--infile', type=str, required=True, nargs='+', help='File to parse. "-" is stdin (without ")')
+load_parser.add_argument('--outfile', type=str, required=False, default=None, help='Output to the changed lines to this file. Without, results are printed to stdout')
 load_parser.add_argument('-s', '--search', type=str, required=True, help='Type of formatting that will be found in the file')
-load_parser.add_argument('-i', '--index', type=int, default=0, help='Preferred timestamp to convert should there be more than one match')
-load_parser.add_argument('-o', '--strftime', type=str, required=True, help='Translate the format to this date format - you can get a list of available formats using: enquire --search')
-load_parser.add_argument('--outfile', type=str, required=False, default=None, help='Output to the changed lines to this file')
-load_parser.add_argument('--printall', action='store_true', required=False, help='Keep lines with no matches (printall) - can be used with free text files - potentially dangerous')
-load_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore errors and continue parsing - only output matching lines')
+load_parser.add_argument('-r', '--replace', type=str, required=True, help='Translate the format to this date format - you can get a list of available formats using: enquire --search')
+
+# Mutually exclusive
+load_parser.add_argument('-i', '--index', type=int, help='Preferred timestamp to convert should there be more than one match')
+# load_parser.add_argument('-c', '--cut', type=str, default=None, help='Slice format for line. Can be the likes of: [10:], [:10], [5:10]')
+
+load_parser.add_argument('--outall', action='store_true', required=False, help='Output all lines even if a date is not found - potentially dangerous')
+load_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore parsing errors and continue. Assists debugging')
 
 load_parser = subparsers.add_parser('timesketch')
 
@@ -61,8 +65,7 @@ def load(inFile):
 			yield (line_no, line.rstrip())
 			line_no += 1
 
-
-def mod_ts(line, inFmt, outFmt, printall, ignore, index):
+def mod_ts(line, inFmt, outFmt, outall, ignore, index):
 
 	line_no, line = line
 
@@ -75,31 +78,36 @@ def mod_ts(line, inFmt, outFmt, printall, ignore, index):
 		raise FormatError('No such formatter: {}'.format(args.search))
 
 	# Loop over the format types' candidates
-	for i, candidate in fmt.items():
+	for _, candidate in fmt.items():
 
 		regex = candidate['regex']
 		strftime = candidate['strftime']
 
 		match = re.findall(regex, line)
 
-		# No matches
+		# No matches, for search
 		if len(match) == 0:
 			continue # We may get a match with another candidate
 
-		# More than one match
+		# More than one match, for search
 		if len(match) > 1:
-			matches.append({'ts':match[index], 'strftime':strftime})
+			if index:
+				matches.append({'ts':match[index], 'strftime':strftime})
+			elif not ignore:
+				raise MatchError('Multiple matches for line. Maybe use --index, --cut, or --ignore. Line # {}'.format(line_no))
 
 		# Only one match - OK
 		if len(match) == 1:
 			matches.append({'ts':match[0], 'strftime':strftime})
 
 
-	# No matches at all, for line
+	# No matches at all, for search type
 	if len(matches) < 1:
 
-		if printall:
+		if outall and ignore:
 			return line
+		if ignore:
+
 		elif ignore:
 			return False
 		else:
@@ -109,7 +117,7 @@ def mod_ts(line, inFmt, outFmt, printall, ignore, index):
 	if len(matches) > 1:
 
 		if not ignore:
-			raise MatchError('Multiple matches for line: {}'.format(line_no))
+			raise MatchError('Multiple matches for line, maybe use --index, --cut, or --ignore: {}'.format(line_no))
 
 	# If we have more than one match for the entire line, we use the first one
 	if len(matches) == 1:
@@ -121,7 +129,7 @@ def mod_ts(line, inFmt, outFmt, printall, ignore, index):
 		try:
 			ts_new = datetime.strptime(ts_old, match['strftime'])
 		except ValueError as e:
-			if printall:
+			if outall:
 				return line
 			elif not ignore:
 				raise FormatError(e)
@@ -173,7 +181,7 @@ if __name__ == '__main__':
 		for file in args.infile:
 			for line in load(file):
 
-				new_line = mod_ts(line=line, inFmt=args.search, outFmt=args.strftime, printall=args.printall, ignore=args.ignore, index=args.index)
+				new_line = mod_ts(line=line, inFmt=args.search, outFmt=args.replace, outall=args.outall, ignore=args.ignore, index=args.index)
 
 				if new_line:
 

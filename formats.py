@@ -1,3 +1,6 @@
+# Searches can contain multiple types within one type - for example, OSX ls needs two as if the file/dir has been created this year, the timestamp does not contain a date.
+# It's best to use match anchors like ^ or $ to limit the requirement of --cut on the cli
+
 searches = {
 
 	'osx-ls': {
