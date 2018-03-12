@@ -30,10 +30,10 @@ load_parser.add_argument('--outfile', type=str, required=False, default='-', hel
 load_parser.add_argument('-s', '--search', type=str, required=True, help='Type of formatting that will be found in the file')
 load_parser.add_argument('-r', '--replace', type=str, required=True, help='Translate the format to this date format - you can get a list of available formats using: enquire --search')
 
-# Mutually exclusive
 load_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, help='Start and end position to look for timestamps - cut operation is performed before index evaluation')
-load_parser.add_argument('-i', '--index', type=int, default=0, help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line replaced')
+load_parser.add_argument('-i', '--index', type=int, default=None, help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line replaced')
 
+# Mutually exclusive
 load_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files')
 load_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors')
 
@@ -86,7 +86,7 @@ class writef(object):
 # If there are no matches, return nothing
 # If there is more hat one match, return the match with index, else, nothing
 # If there is only one match, that's good :)
-def match(line, line_no, regex, index, cut, ignore):
+def match(line, line_no, regex, index, cut, ignore, include):
 
 	if cut:
 		start, end = cut
@@ -97,39 +97,24 @@ def match(line, line_no, regex, index, cut, ignore):
 	# matches = list(regex.finditer(line, start, end))
 	matches = list(regex.finditer(line, start, end))
 
-
-	# Index matching needs to be sorted!
-
-
-	if len(matches) >= index:
-		return [matches[index]]
-	else:
-		if not ignore:
-			raise MatchError('Index does not exist!')
-		else:
-			return []
+	# See if we can use index value
+	if type(index) == int:
+		try:
+			return [matches[index]]
+		except:
+			if not ignore and not include:
+				raise MatchError('Index does not exist: {} "{}"'.format(line_no, line))
+			else:
+				return
 
 	# No matches
-	if len(matches) == 0:
-		return []
-
-	# More than one match
-	# elif len(matches) > 1 and len(matches) >= index:
-
-	# 		try:
-	# 			return [matches[index]]
-	# 		except IndexError as e:
-	# 			if ignore:
-	# 				return []
-	# 			else:
-	# 				raise e
-
+	elif len(matches) == 0:
+		return
 	# Only one match - OK
 	elif len(matches) == 1:
 		return matches
-
 	else:
-		return []
+		return matches
 
 
 def replace(line, line_no, matches, strftimes):
@@ -174,23 +159,26 @@ if __name__ == '__main__':
 		for file in args.infile:
 			for line_no, line in loadf(file):
 
-				matches = match(line=line, line_no=line_no, regex=regex, index=args.index, cut=args.cut, ignore=args.ignore)
-
-				for m in matches:
-					print(m.start(), m.end(), m.groups(), line)
 				print('*'*10)
+
+				matches = match(line=line, line_no=line_no, regex=regex, index=args.index, cut=args.cut, ignore=args.ignore, include=args.include)
+
+				if matches:
+
+					# Now replace!!
+					# replace(line_no, line, matches, strftimes)
+
+					for m in matches:
+						print(m.start(), m.end(), m.groups(), line)
+
+				elif args.include:
+					print(line)
+
+				elif args.ignore:
+					continue
 
 				continue
 
-				if len(matches) > 1:
-					res = replace(line=line, line_no=line_no, matches=matches, strftimes=strftimes)
-				elif len(matches) < 1:
-					if args.include:
-						write_file.write(line)
-					elif args.ignore:
-						pass
-					elif not args.ignore:
-						raise MatchError('No matches for line: {}'.format(line_no))
 
 
 

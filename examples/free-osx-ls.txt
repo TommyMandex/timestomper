@@ -16,6 +16,7 @@
  2 dr-xr-xr-x   2 root  wheel     1B  6 Mar 23:15 net/
  0 drwxr-xr-x@  6 root  wheel   204B  7 Nov  2015 private/
  0 drwxr-xr-x@ 59 root  wheel   2.0K 13 Dec 23:53 sbin/
+This line has no date
  8 lrwxr-xr-x@  1 root  wheel    11B  7 Nov  2015 tmp -> private/tmp
  0 drwxr-xr-x@ 13 root  wheel   442B  8 Nov  2015 usr/
  8 lrwxr-xr-x@  1 root  wheel    11B  7 Nov  2015 var -> private/var
