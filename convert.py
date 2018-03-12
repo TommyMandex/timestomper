@@ -27,13 +27,13 @@ enquire_parser.add_argument('-s', '--search', action='store_true', required=True
 
 load_parser = subparsers.add_parser('load')
 load_parser.add_argument('--infile', type=str, required=True, nargs='+', help='File to parse. "-" is stdin (without ")')
-load_parser.add_argument('--outfile', type=str, required=False, default=None, help='Output to the changed lines to this file. Without, results are printed to stdout')
+load_parser.add_argument('--outfile', type=str, required=False, default='-', help='Output to the changed lines to this file. Without, results are printed to stdout')
 load_parser.add_argument('-s', '--search', type=str, required=True, help='Type of formatting that will be found in the file')
 load_parser.add_argument('-r', '--replace', type=str, required=True, help='Translate the format to this date format - you can get a list of available formats using: enquire --search')
 
 # Mutually exclusive
-load_parser.add_argument('-i', '--index', type=int, help='Preferred timestamp to convert should there be more than one match')
-# load_parser.add_argument('-c', '--cut', type=str, default=None, help='Slice format for line. Can be the likes of: [10:], [:10], [5:10]')
+load_parser.add_argument('-c', '--cut', type=str, default=None, help='Slice format for line. Can be the likes of: [10:], [:10], [5:10] - cut operation is performed before index')
+load_parser.add_argument('-i', '--index', type=int, default=None, help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a lineare replaced')
 
 load_parser.add_argument('--outall', action='store_true', required=False, help='Output all lines even if a date is not found - potentially dangerous')
 load_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore parsing errors and continue. Assists debugging')
@@ -54,28 +54,88 @@ log = logging.getLogger('timestomper')
 
 def load(inFile):
 
-	if inFile != '-':
+	if inFile == '-':
+		line_no = 0
+		for line in sys.stdin:
+			line_no += 1
+			yield (line_no, line.rstrip())
 
+	else:
 		with open(inFile) as fp:
 			for line_no, line in enumerate(fp):
 				yield (line_no, line.rstrip())
-	else:
-		line_no = 0
-		for line in sys.stdin:
-			yield (line_no, line.rstrip())
-			line_no += 1
+
+class write(object):
+	"""docstring for write"""
+	def __init__(self, outFile):
+		super(write, self).__init__()
+		self.outFile = outFile
+
+		if outFile == '-':
+			pass
+		else:
+			pass
+		print('Opening file {}'.format(self.outFile))
+
+		return self
+
+	def write(self, line):
+		print('Writing: {}: {}'.format(self.outFile, line))
+
+	def close(self):
+		print('Closing file {}'.format(self.outFile))
+
+
+def match(line, searches, index, cut):
+
+	line_no, line = line
+
+	# define limits on what can be matched up here: E.g. cut
+
+	matches = []
+
+	# Loop over the format types' candidates
+	for c_id, candidate in searches.items():
+
+		regex = candidate['regex']
+		strftime = candidate['strftime']
+
+		match = re.findall(regex, line)
+
+		# No matches
+		if len(match) == 0:
+			continue
+
+		# More than one match
+		elif len(match) > 1:
+
+			if index:
+				matches.append(match[index])
+
+			elif ignore:
+				raise MatchError('Multiple matches for line. Maybe use --index, --cut, or --ignore. Line # {}'.format(line_no))
+
+
+		# Only one match - OK
+		elif len(match) == 1:
+			continue
+
+def replace():
+	pass
+
 
 def mod_ts(line, inFmt, outFmt, outall, ignore, index):
 
 	line_no, line = line
-
-	matches = []
 
 	# Check informat are valid and assign
 	try:
 		fmt = fmts.searches[inFmt]
 	except KeyError as e:
 		raise FormatError('No such formatter: {}'.format(args.search))
+
+
+	matches = []
 
 	# Loop over the format types' candidates
 	for _, candidate in fmt.items():
@@ -93,6 +153,7 @@ def mod_ts(line, inFmt, outFmt, outall, ignore, index):
 		if len(match) > 1:
 			if index:
 				matches.append({'ts':match[index], 'strftime':strftime})
+
 			elif not ignore:
 				raise MatchError('Multiple matches for line. Maybe use --index, --cut, or --ignore. Line # {}'.format(line_no))
 
@@ -101,13 +162,14 @@ def mod_ts(line, inFmt, outFmt, outall, ignore, index):
 			matches.append({'ts':match[0], 'strftime':strftime})
 
 
+
 	# No matches at all, for search type
 	if len(matches) < 1:
 
-		if outall and ignore:
+		if outall:
 			return line
 		if ignore:
-
+			pass
 		elif ignore:
 			return False
 		else:
@@ -150,6 +212,7 @@ def mod_ts(line, inFmt, outFmt, outall, ignore, index):
 
 		return new_line
 
+
 def print_searches():
 
 	print('Search formats:')
@@ -173,15 +236,18 @@ if __name__ == '__main__':
 
 	elif method == 'load':
 
-		if args.outfile:
-			log.debug('Opening file: {}'.format(args.outfile))
-			write_file = open(args.outfile, 'w+')
+		# Check searches are valid and assign
+		try:
+			searches = fmts.searches[args.search]
+		except KeyError as e:
+			raise FormatError('No such formatter: {}'.format(args.search))
 
+		write_file = write(args.outfile)
 
 		for file in args.infile:
 			for line in load(file):
 
-				new_line = mod_ts(line=line, inFmt=args.search, outFmt=args.replace, outall=args.outall, ignore=args.ignore, index=args.index)
+				matches = match(line=line, searches=searches, index=args.index, cut=args.cut)
 
 				if new_line:
 
@@ -196,10 +262,7 @@ if __name__ == '__main__':
 						log.debug('{:5}: [ignore] {}'.format(line_no, line))
 
 
-
-		if args.outfile:
-			log.debug('Closing file: {}'.format(args.outfile))
-			write_file.close()
+		write_file.close()
 
 
 
