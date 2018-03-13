@@ -77,7 +77,7 @@ class writef(object):
 
 
 	def write(self, line):
-		log.debug('Writing to: "{}": {}'.format(self.outFile, line))
+		log.debug('Writing to "{}": {}'.format(self.outFile, line))
 
 	def close(self):
 		log.debug('Closing: "{}"'.format(self.outFile))
@@ -86,7 +86,7 @@ class writef(object):
 # If there are no matches, return nothing
 # If there is more hat one match, return the match with index, else, nothing
 # If there is only one match, that's good :)
-def match(line, line_no, regex, index, cut, ignore, include):
+def match(line, line_no, searches, index, cut, ignore, include):
 
 	if cut:
 		start, end = cut
@@ -94,31 +94,50 @@ def match(line, line_no, regex, index, cut, ignore, include):
 		start = 0
 		end = len(line)
 
-	# matches = list(regex.finditer(line, start, end))
-	matches = list(regex.finditer(line, start, end))
 
-	# See if we can use index value
-	if type(index) == int:
-		try:
-			return [matches[index]]
-		except:
-			if not ignore and not include:
-				raise MatchError('Index does not exist: {} "{}"'.format(line_no, line))
-			else:
-				return
+	matches = []
+	for s in searches:
+
+		regex = re.compile(s['regex'])
+		local_matches = list(regex.finditer(line, start, end))
+
+
+		if len(local_matches) > 1:
+			# See if we can use index value
+			if index:
+				try:
+					 matches += local_matches[index]
+					 continue
+				except:
+					if not ignore and not include:
+						raise MatchError('Index does not exist: line {}, "{}"'.format(line_no, line))
+
+		matches += local_matches
+
+
+	# More than one match
+	if len(matches) > 1:
+		# See if we can use index value
+		if type(index) == int:
+			try:
+				 return [matches[index]]
+			except:
+				if not ignore and not include:
+					raise MatchError('Index does not exist: line {}, "{}"'.format(line_no, line))
 
 	# No matches
 	elif len(matches) == 0:
 		return
+	# Dont return if index is set and we dont have the right amount of matches
+	elif index and not len(matches) > index:
+		return
 	# Only one match - OK
 	elif len(matches) == 1:
 		return matches
-	else:
-		return matches
 
 
-def replace(line, line_no, matches, strftimes):
-	pass
+def replace(line_no, line, matches, regex, strftimes):
+	return line
 
 
 if __name__ == '__main__':
@@ -151,36 +170,30 @@ if __name__ == '__main__':
 			log.critical('No such search: "{}" - use enquire --search to find valid searches'.format(args.search))
 			exit(1)
 
-		regex = re.compile(searches['regex'])
-		strftimes = searches['strftime']
-
 		write_file = writef(args.outfile)
 
 		for file in args.infile:
 			for line_no, line in loadf(file):
 
-				print('*'*10)
-
-				matches = match(line=line, line_no=line_no, regex=regex, index=args.index, cut=args.cut, ignore=args.ignore, include=args.include)
+				matches = match(line_no=line_no, line=line, searches=searches, index=args.index, cut=args.cut, ignore=args.ignore, include=args.include)
 
 				if matches:
 
 					# Now replace!!
-					# replace(line_no, line, matches, strftimes)
+					# new_line = replace(line_no=line_no, line=line, matches=matches, strftimes=strftimes)
+
+					# write_file.write(new_line)
 
 					for m in matches:
-						print(m.start(), m.end(), m.groups(), line)
+						print(line_no, m.start(), m.end(), m.groups(), line)
 
+				# This line didn't match, but we were asked to include non-matching
 				elif args.include:
-					print(line)
+					write_file.write(line)
 
+				# The line didn't match, and we don't care about them
 				elif args.ignore:
 					continue
-
-				continue
-
-
-
 
 
 		write_file.close()
