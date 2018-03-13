@@ -56,12 +56,12 @@ def loadf(inFile):
 		line_no = 0
 		for line in sys.stdin:
 			line_no += 1
-			yield line_no, line.rstrip()
+			yield line_no, line
 
 	else:
 		with open(inFile) as fp:
 			for line_no, line in enumerate(fp):
-				yield line_no, line.rstrip()
+				yield line_no, line
 
 class writef(object):
 	"""docstring for writef"""
@@ -86,7 +86,7 @@ class writef(object):
 # If there are no matches, return nothing
 # If there is more hat one match, return the match with index, else, nothing
 # If there is only one match, that's good :)
-def match(line, line_no, searches, index, cut, ignore, include):
+def match(line_no, line, searches, index, cut, ignore, include):
 
 	if cut:
 		start, end = cut
@@ -99,21 +99,21 @@ def match(line, line_no, searches, index, cut, ignore, include):
 	for s in searches:
 
 		regex = re.compile(s['regex'])
-		local_matches = list(regex.finditer(line, start, end))
+		strftime = s['strftime']
 
+		local_matches = list((strftime, match) for match in regex.finditer(line, start, end))
 
-		if len(local_matches) > 1:
-			# See if we can use index value
-			if index:
-				try:
-					 matches += local_matches[index]
-					 continue
-				except:
-					if not ignore and not include:
-						raise MatchError('Index does not exist: line {}, "{}"'.format(line_no, line))
+		# if len(local_matches) > 1:
+		# 	# See if we can use index value
+		# 	if index:
+		# 		try:
+		# 			 matches += [local_matches[index]]
+		# 			 continue
+		# 		except:
+		# 			if not ignore and not include:
+		# 				raise MatchError('Index does not exist: line {}, "{}"'.format(line_no, line))
 
 		matches += local_matches
-
 
 	# More than one match
 	if len(matches) > 1:
@@ -127,12 +127,16 @@ def match(line, line_no, searches, index, cut, ignore, include):
 
 	# No matches
 	elif len(matches) == 0:
+		if not ignore:
+			raise MatchError('No matches for line {}, "{}"'.format(line_no, line))
 		return
 	# Dont return if index is set and we dont have the right amount of matches
 	elif index and not len(matches) > index:
 		return
 	# Only one match - OK
 	elif len(matches) == 1:
+		return matches
+	else:
 		return matches
 
 
@@ -181,15 +185,17 @@ if __name__ == '__main__':
 
 					# Now replace!!
 					# new_line = replace(line_no=line_no, line=line, matches=matches, strftimes=strftimes)
-
 					# write_file.write(new_line)
 
-					for m in matches:
-						print(line_no, m.start(), m.end(), m.groups(), line)
+					print(matches, line)
+
+					# for m in matches:
+						# write_file.write((line_no, m.start(), m.end(), m.groups(), line))
+
 
 				# This line didn't match, but we were asked to include non-matching
 				elif args.include:
-					write_file.write(line)
+					write_file.write(('no match', line))
 
 				# The line didn't match, and we don't care about them
 				elif args.ignore:
