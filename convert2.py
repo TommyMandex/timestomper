@@ -5,22 +5,16 @@
 # Example values in --help
 
 
-
-
 import argparse, re, sys, logging
 from datetime import datetime
 
 import formats as fmts
 
 class MatchError(Exception):
-	def __init__(self, message):
-		self.message = message
-		log.critical(message)
+	pass
 
 class FormatError(Exception):
-	def __init__(self, message):
-		self.message = message
-		log.critical(message)
+	pass
 
 
 parser = argparse.ArgumentParser()
@@ -36,15 +30,12 @@ load_parser.add_argument('--infile', type=str, required=True, nargs='+', help='F
 load_parser.add_argument('--outfile', type=str, required=False, default='-', help='Output changed lines to this file. Without or -, results are printed to stdout')
 load_parser.add_argument('-s', '--search', type=str, required=True, help='Type of formatting that will be found in the file')
 load_parser.add_argument('-r', '--replace', type=str, default='def', help='Translate the format to this date format - you can get a list of available formats using: enquire --search')
-
 load_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, help='Start and end position to look for timestamps - cut operation is performed before index evaluation')
 load_parser.add_argument('-i', '--index', type=int, default=None, help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line replaced')
-
-# Mutually exclusive
 load_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files')
 load_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors')
 
-load_parser = subparsers.add_parser('timesketch')
+# load_parser = subparsers.add_parser('timesketch')
 
 args = parser.parse_args()
 
@@ -255,9 +246,4 @@ if __name__ == '__main__':
 
 
 		write_file.close()
-
-
-
-
-
 
