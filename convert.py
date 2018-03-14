@@ -3,6 +3,7 @@
 # Change to module/class?
 # Example values in --help
 
+from __future__ import print_function
 
 import argparse, re, sys, logging
 from datetime import datetime
@@ -13,38 +14,43 @@ class NoMatchError(Exception):
 	pass
 class MatchIndexError(Exception):
 	pass
+class ReplaceError(Exception):
+	pass
 class FormatError(Exception):
 	pass
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-v', '--verbose', action='store_true', help='Verbose - print debug information')
+parser.add_argument('-v', '--verbose', action='store_true', help='Print debug information to stderr')
 
 subparsers = parser.add_subparsers(help='')
 
 enquire_parser = subparsers.add_parser('enquire')
-enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search types')
+enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search and replace strings')
 
 fileout_parser = subparsers.add_parser('fileout')
 fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', help='File to parse. - is stdin')
-fileout_parser.add_argument('--outfile', type=str, required=False, default='-', help='Output changed lines to this file. Without or -, results are printed to stdout')
-fileout_parser.add_argument('-s', '--search', type=str, required=True, help='Type of search formats that will be found in the file - you can get a list of available searches using: enquire --search')
-fileout_parser.add_argument('-r', '--replace', type=str, default='def', help='Translate the format to this date format - you can get a list of available formats using: enquire --search')
-fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, help='Start and end position to look for timestamps - cut operation is performed before index evaluation')
-fileout_parser.add_argument('-i', '--index', type=int, default=None, help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line replaced')
-fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files')
-fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors')
+fileout_parser.add_argument('--outfile', type=str, required=False, default='-', help='Output changed lines to this file. If not included or -, results are printed to stdout')
+fileout_parser.add_argument('-s', '--search', type=str, required=True, help='Type of date/time format that will be found in the file - you can get a list of available searches using: {} enquire --search'.format(sys.argv[0]))
+fileout_parser.add_argument('-r', '--replace', type=str, default='default', help='Translate the found date/time to this format - you can get a list of available formats using: {} enquire --search'.format(sys.argv[0]))
+fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
+fileout_parser.add_argument('-i', '--index', type=int, default=None, help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
+fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
+fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
 
 # timesketch_parser = subparsers.add_parser('timesketch')
 
 args = parser.parse_args()
 
+
+
 if args.verbose:
 	method = sys.argv[2]
-	logging.basicConfig(stream=sys.stderr, format='Verbose | %(message)s', level=logging.DEBUG)
+	logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.DEBUG)
 else:
 	method = sys.argv[1]
-	logging.basicConfig(stream=sys.stderr, format='*** ERROR | %(message)s', level=logging.CRITICAL)
+	logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.CRITICAL)
+
 log = logging.getLogger('timestomper')
 
 
@@ -63,22 +69,29 @@ def loadf(inFile):
 
 
 class writef(object):
-	"""docstring for writef"""
+
 	def __init__(self, outFile):
 		super(writef, self).__init__()
 		self.outFile = outFile
 
 		if outFile == '-':
-			log.debug('Opening stdout')
+			log.debug('Opening "stdout"')
 		else:
 			log.debug('Opening for write: "{}"'.format(self.outFile))
+			self.outFile = open(outFile, mode='wb', buffering=1)
 
 
 	def write(self, line):
-		log.debug('Writing to "{}": {}'.format(self.outFile, line))
+
+		line_no, line = line
+
+		log.debug('Writing line [{}] to "{}" | {}'.format(line_no, ('-' if type(self.outFile) == str else self.outFile.name), [line]))
+		print(line, end='') if type(self.outFile) == str else self.outFile.write(line)	
+
 
 	def close(self):
-		log.debug('Closing: "{}"'.format(self.outFile))
+		log.debug('Closing: "{}"'.format('-' if type(self.outFile) == str else self.outFile.name))
+
 
 
 def match(line_no, line, searches, index, cut, ignore, include):
@@ -89,7 +102,7 @@ def match(line_no, line, searches, index, cut, ignore, include):
 		start = 0
 		end = len(line)
 
-
+	# For each of the search types get matches
 	matches = []
 	for s in searches:
 
@@ -109,7 +122,6 @@ def match(line_no, line, searches, index, cut, ignore, include):
 
 	matches = [x for _,x in sorted(zip(order,matches))]
 
-
 	# Only return the correct match if index is set
 	if type(index) == int:
 		try:
@@ -118,14 +130,14 @@ def match(line_no, line, searches, index, cut, ignore, include):
 			if (ignore or include):
 				return
 			else:
-				raise MatchIndexError('Index does not exist: line {}, "{}"'.format(line_no, line))
+				raise MatchIndexError('Index does not exist: [{}] "{}"'.format(line_no, [line]))
 
 	# No matches
 	elif len(matches) == 0:
 		if (ignore or include):
 			return
 		else:
-			raise NoMatchError('No matches for line {}, "{}"'.format(line_no, line))
+			raise NoMatchError('No matches: [{}] "{}"'.format(line_no, [line]))
 
 	# Only one match - OK
 	elif len(matches) == 1:
@@ -197,7 +209,7 @@ if __name__ == '__main__':
 			searches = fmts.searches[args.search]
 			log.debug('Using \'{}\' search pattern'.format(args.search))
 		except KeyError as e:
-			log.critical('No such search: "{}" - use enquire --search to find valid searches'.format(args.search))
+			log.critical('No such search. Use \'{} enquire --search\' to find valid searches: "{}"'.format(sys.argv[0], args.search))
 			exit(1)
 
 		# Check replace format
@@ -209,7 +221,7 @@ if __name__ == '__main__':
 
 		# Check cut is sensible - check if the starting cut is before end
 		if args.cut and (not args.cut[0] < args.cut[1]):
-			log.critical('Error with --cut. Start seems before end')
+			log.critical('Error with --cut - start greater than end: {} < {}'.format(args.cut[0], args.cut[1]))
 			exit(1)
 
 		write_file = writef(args.outfile)
@@ -227,8 +239,7 @@ if __name__ == '__main__':
 					# We need to calcualte the offset if multiple matches need to be replaced
 					# The new time format is probably not the same length as the old one
 					new_line = line
-					prev_line_len = len(new_line)
-					new_line_len = len(new_line)
+					new_line_len = prev_line_len = len(new_line)
 
 					for m in matches:
 
@@ -246,12 +257,13 @@ if __name__ == '__main__':
 					if new_line:
 						write_file.write((line_no, new_line))
 					else:
-						write_file.write(('Replace failed: {} {}'.format(line_no, line)))
+						raise ReplaceError(('Replace failed: [{}] "{}"'.format(line_no, [line])))
 
 
 				# This line didn't match, but we were asked to include non-matching
 				elif args.include:
-					write_file.write(('no match', line))
+					# log.debug('No match, but included | {}'.format([line]))
+					write_file.write((line_no, line))
 
 				# The line didn't match, and we don't care about them
 				elif args.ignore:
