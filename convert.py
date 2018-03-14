@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-# Change 'load'
 # Change to module/class?
 # Example values in --help
 
@@ -10,9 +9,10 @@ from datetime import datetime
 
 import formats as fmts
 
-class MatchError(Exception):
+class NoMatchError(Exception):
 	pass
-
+class MatchIndexError(Exception):
+	pass
 class FormatError(Exception):
 	pass
 
@@ -25,17 +25,17 @@ subparsers = parser.add_subparsers(help='')
 enquire_parser = subparsers.add_parser('enquire')
 enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search types')
 
-load_parser = subparsers.add_parser('load')
-load_parser.add_argument('--infile', type=str, required=True, nargs='+', help='File to parse. - is stdin')
-load_parser.add_argument('--outfile', type=str, required=False, default='-', help='Output changed lines to this file. Without or -, results are printed to stdout')
-load_parser.add_argument('-s', '--search', type=str, required=True, help='Type of formatting that will be found in the file')
-load_parser.add_argument('-r', '--replace', type=str, default='def', help='Translate the format to this date format - you can get a list of available formats using: enquire --search')
-load_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, help='Start and end position to look for timestamps - cut operation is performed before index evaluation')
-load_parser.add_argument('-i', '--index', type=int, default=None, help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line replaced')
-load_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files')
-load_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors')
+fileout_parser = subparsers.add_parser('fileout')
+fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', help='File to parse. - is stdin')
+fileout_parser.add_argument('--outfile', type=str, required=False, default='-', help='Output changed lines to this file. Without or -, results are printed to stdout')
+fileout_parser.add_argument('-s', '--search', type=str, required=True, help='Type of search formats that will be found in the file - you can get a list of available searches using: enquire --search')
+fileout_parser.add_argument('-r', '--replace', type=str, default='def', help='Translate the format to this date format - you can get a list of available formats using: enquire --search')
+fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, help='Start and end position to look for timestamps - cut operation is performed before index evaluation')
+fileout_parser.add_argument('-i', '--index', type=int, default=None, help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line replaced')
+fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files')
+fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors')
 
-# load_parser = subparsers.add_parser('timesketch')
+# timesketch_parser = subparsers.add_parser('timesketch')
 
 args = parser.parse_args()
 
@@ -60,6 +60,7 @@ def loadf(inFile):
 		with open(inFile) as fp:
 			for line_no, line in enumerate(fp):
 				yield line_no, line
+
 
 class writef(object):
 	"""docstring for writef"""
@@ -88,6 +89,7 @@ def match(line_no, line, searches, index, cut, ignore, include):
 		start = 0
 		end = len(line)
 
+
 	matches = []
 	for s in searches:
 
@@ -95,6 +97,17 @@ def match(line_no, line, searches, index, cut, ignore, include):
 		strftime = s['strftime']
 
 		matches += list((strftime, match) for match in regex.finditer(line, start, end))
+
+
+	# Reorder the matches otherwise index is wrong
+	# There is no guarentee that the order we found the matches in are in order
+	order = []
+	for m in matches:
+		strftime, match = m
+
+		order.append(match.start())
+
+	matches = [x for _,x in sorted(zip(order,matches))]
 
 
 	# Only return the correct match if index is set
@@ -105,14 +118,14 @@ def match(line_no, line, searches, index, cut, ignore, include):
 			if (ignore or include):
 				return
 			else:
-				raise MatchError('Index does not exist: line {}, "{}"'.format(line_no, line))
+				raise MatchIndexError('Index does not exist: line {}, "{}"'.format(line_no, line))
 
 	# No matches
 	elif len(matches) == 0:
 		if (ignore or include):
 			return
 		else:
-			raise MatchError('No matches for line {}, "{}"'.format(line_no, line))
+			raise NoMatchError('No matches for line {}, "{}"'.format(line_no, line))
 
 	# Only one match - OK
 	elif len(matches) == 1:
@@ -165,10 +178,11 @@ if __name__ == '__main__':
 			for name, types in fmts.searches.items():
 				print('{:>17}:'.format(name))
 
-				regex = fmts.searches[name]['regex']
-				strftime = fmts.searches[name]['strftime']
+				for t in types:
+					regex = t['regex']
+					strftime = t['strftime']
 
-				print('{0:>15}Regex: "{1}"\n{0:>15}strftime: {2}\n'.format(' ', regex, strftime))
+					print('{0:>15}Regex: "{1}"\n{0:>15}strftime: {2}\n'.format(' ', regex, strftime))
 
 			print('Output formats:')
 			for k,v in fmts.out_strftime.items():
@@ -176,7 +190,7 @@ if __name__ == '__main__':
 
 			exit(0)
 
-	elif method == 'load':
+	elif method == 'fileout':
 
 		# Check searches are valid and assign
 		try:
@@ -194,7 +208,7 @@ if __name__ == '__main__':
 			log.debug('Custom output date format "{}"'.format(args.replace))
 
 		# Check cut is sensible - check if the starting cut is before end
-		if not args.cut[0] < args.cut[1]:
+		if args.cut and (not args.cut[0] < args.cut[1]):
 			log.critical('Error with --cut. Start seems before end')
 			exit(1)
 

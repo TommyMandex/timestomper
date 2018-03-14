@@ -42,9 +42,9 @@ searches = {
 }
 
 out_strftime = {
-	'epoch'	: '%s',
-	'uk'	: '%d/%m/%y %H:%M',
-	'us'	: '%m/%d/%y %H:%M',
-	'year'	: '%y-%m-%d %H:%M',
-	'def'	: '%Y%m%d_%H%M',
+	'epoch'		: '%s',
+	'uk'		: '%d/%m/%y %H:%M',
+	'us'		: '%m/%d/%y %H:%M',
+	'year'		: '%y-%m-%d %H:%M',
+	'default'	: '%Y%m%d_%H%M',
 }

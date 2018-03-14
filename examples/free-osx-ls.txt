@@ -9,6 +9,7 @@
  0 drwxrwxr-t@  2 root  admin    68B 22 Aug  2015 cores/
  0 drwxrwxr-t@  2 root  admin    68B 22 Aug  2015 cores2/
  0 drwxrwxr-t@  2 root  admin    68B 22 Aug  2015 cores2/(22 Aug  2015-22 Aug  2015)
+ 0 drwxrwxr-t@  2 root  admin    68B 22 Aug  2015 cores2/(22 Aug  2015-10 Feb 17:41)
 
 15 dr-xr-xr-x   3 root  wheel   7.4K 10 Feb 17:41 dev/
  8 lrwxr-xr-x@  1 root  wheel    11B  7 Nov  2015 etc -> private/etc
