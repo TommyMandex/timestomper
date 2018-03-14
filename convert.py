@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 # Change to module/class?
-# Example values in --help
 
 from __future__ import print_function
 
@@ -29,19 +28,18 @@ enquire_parser = subparsers.add_parser('enquire')
 enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search and replace strings')
 
 fileout_parser = subparsers.add_parser('fileout')
-fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', help='File to parse. - is stdin')
-fileout_parser.add_argument('--outfile', type=str, required=False, default='-', help='Output changed lines to this file. If not included or -, results are printed to stdout')
-fileout_parser.add_argument('-s', '--search', type=str, required=True, help='Type of date/time format that will be found in the file - you can get a list of available searches using: {} enquire --search'.format(sys.argv[0]))
-fileout_parser.add_argument('-r', '--replace', type=str, default='default', help='Translate the found date/time to this format - you can get a list of available formats using: {} enquire --search'.format(sys.argv[0]))
-fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
-fileout_parser.add_argument('-i', '--index', type=int, default=None, help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
+fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
+fileout_parser.add_argument('--outfile', type=str, required=False, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
+fileout_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time format that will be found in the file - you can get a list of available searches using: {} enquire --search'.format(sys.argv[0]))
+fileout_parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%d/%m/%y %H:%M"', help='Translate the found date/time to this format - you can get a list of available formats using: {} enquire --search'.format(sys.argv[0]))
+fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
+fileout_parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
 fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
 fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
 
 # timesketch_parser = subparsers.add_parser('timesketch')
 
 args = parser.parse_args()
-
 
 
 if args.verbose:
@@ -112,7 +110,7 @@ def match(line_no, line, searches, index, cut, ignore, include):
 		matches += list((strftime, match) for match in regex.finditer(line, start, end))
 
 
-	# Reorder the matches otherwise index is wrong
+	# Reorder the matches otherwise index is going to be wrong
 	# There is no guarantee that the order we found the matches in are in order
 	order = []
 	for m in matches:
@@ -150,15 +148,15 @@ def match(line_no, line, searches, index, cut, ignore, include):
 
 def replace(line_no, line, replace, strftime, matchobj, ignore, offset=False):
 
+	# If given an offset, it is presumed the start and end values will need adjusting
 	start, end = matchobj.start(), matchobj.end()
-
 	if offset:
 		start += offset
 		end += offset
 
 	old_date = line[start:end]
 
-	# Try and parse the line
+	# Try and parse the old date to datetime - if it fails make sure we have ignore
 	try:
 		new_date = datetime.strptime(old_date, strftime)
 	except ValueError as e:
@@ -171,7 +169,7 @@ def replace(line_no, line, replace, strftime, matchobj, ignore, offset=False):
 	if new_date.year == 1900:
 		new_date = new_date.replace(year=datetime.now().year)
 
-	# Get the new timestamp as a string using args.replace 
+	# Get the new timestamp as a string using args.replace value
 	new_date_str = new_date.strftime(replace)
 
 	# Construct new line
@@ -200,17 +198,10 @@ if __name__ == '__main__':
 			for k,v in fmts.out_strftime.items():
 				print('{:>15}: {}'.format(k,v))
 
-			exit(0)
+		exit(0)
+
 
 	elif method == 'fileout':
-
-		# Check searches are valid and assign
-		try:
-			searches = fmts.searches[args.search]
-			log.debug('Using \'{}\' search pattern'.format(args.search))
-		except KeyError as e:
-			log.critical('No such search. Use \'{} enquire --search\' to find valid searches: "{}"'.format(sys.argv[0], args.search))
-			exit(1)
 
 		# Check replace format
 		if args.replace in fmts.out_strftime:
@@ -224,15 +215,14 @@ if __name__ == '__main__':
 			log.critical('Error with --cut - start greater than end: {} < {}'.format(args.cut[0], args.cut[1]))
 			exit(1)
 
+
 		write_file = writef(args.outfile)
+		searches = fmts.searches[args.search]
 
 		for file in args.infile:
 			for line_no, line in loadf(file):
 
 				matches = match(line_no=line_no, line=line, searches=searches, index=args.index, cut=args.cut, ignore=args.ignore, include=args.include)
-
-				# We really ought to sort the matches by start/end position and also sort them
-				# This is so we can be safe going into the next section
 
 				if matches:
 
@@ -243,7 +233,7 @@ if __name__ == '__main__':
 
 					for m in matches:
 
-						# An offset is needed as we change the length of the line
+						# An offset is needed as we change the length of the line with each replace
 						offset = abs(prev_line_len - new_line_len)
 						if new_line_len < prev_line_len:
 							offset = offset * -1
@@ -271,4 +261,3 @@ if __name__ == '__main__':
 
 
 		write_file.close()
-
