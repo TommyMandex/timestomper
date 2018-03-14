@@ -113,7 +113,7 @@ def match(line_no, line, searches, index, cut, ignore, include):
 
 
 	# Reorder the matches otherwise index is wrong
-	# There is no guarentee that the order we found the matches in are in order
+	# There is no guarantee that the order we found the matches in are in order
 	order = []
 	for m in matches:
 		strftime, match = m
