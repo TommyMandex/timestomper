@@ -3,39 +3,39 @@ searches = {
 	'osx-ls': [
 		{
 				'regex': r'(\d\d?\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d\d\:\d\d)',
-				'strftime': '%d %b %H:%M'
+				'strptime': '%d %b %H:%M'
 		},
 		{
 				'regex': r'(\d\d?\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4})',
-				'strftime': '%d %b %Y'
+				'strptime': '%d %b %Y'
 		}
 	],
 
 	'win-dir-uk': [
 		{
 			'regex': r'(\d{2}\/\d{2}\/\d{4}\s\s\d{2}\:\d{2})',
-			'strftime': '%d/%m/%Y  %H:%M'
+			'strptime': '%d/%m/%Y  %H:%M'
 		}
 	],
 
 	'win-dir-us': [
 		{
 			'regex': r'(\d{2}\/\d{2}\/\d{4}\s\s\d{2}\:\d{2})',
-			'strftime': '%m/%d/%Y  %H:%M'
+			'strptime': '%m/%d/%Y  %H:%M'
 		}
 	],
 
 	'web-golive': [
 		{
 			'regex': r'(\d{2}\/\d{2}\/\d{4}\s\d{2}\:\d{2}\s[AP]M\s\w+)',
-			'strftime': '%m/%d/%Y  %H:%M %p %Z'
+			'strptime': '%m/%d/%Y  %H:%M %p %Z'
 		}
 	],
 
 	'cli-golive': [
 		{
 			'regex': r'(\d{2}\/\d{2}\/\d{4}\s\d{2}\:\d{2}:\d{2}\s[AP]M)',
-			'strftime': '%m/%d/%Y  %H:%M:%S %p'
+			'strptime': '%m/%d/%Y  %H:%M:%S %p'
 		}
 	],
 

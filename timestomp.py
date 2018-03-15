@@ -1,13 +1,12 @@
 #!/usr/bin/python
 
-# Change to module/class?
-
 from __future__ import print_function
-
-import argparse, re, sys, logging
+import re, sys, logging
 from datetime import datetime
 
+
 import formats as fmts
+log = logging.getLogger('timestomper')
 
 class NoMatchError(Exception):
 	pass
@@ -17,40 +16,6 @@ class ReplaceError(Exception):
 	pass
 class FormatError(Exception):
 	pass
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-v', '--verbose', action='store_true', help='Print debug information to stderr')
-
-subparsers = parser.add_subparsers(help='')
-
-enquire_parser = subparsers.add_parser('enquire')
-enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search and replace strings')
-
-fileout_parser = subparsers.add_parser('fileout')
-fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
-fileout_parser.add_argument('--outfile', type=str, required=False, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
-fileout_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time format that will be found in the file - you can get a list of available searches using: {} enquire --search'.format(sys.argv[0]))
-fileout_parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%d/%m/%y %H:%M"', help='Translate the found date/time to this format - you can get a list of available formats using: {} enquire --search'.format(sys.argv[0]))
-fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
-fileout_parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
-fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
-fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
-
-# timesketch_parser = subparsers.add_parser('timesketch')
-
-args = parser.parse_args()
-
-
-if args.verbose:
-	method = sys.argv[2]
-	logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.DEBUG)
-else:
-	method = sys.argv[1]
-	logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.CRITICAL)
-
-log = logging.getLogger('timestomper')
-
 
 def loadf(inFile):
 
@@ -65,10 +30,9 @@ def loadf(inFile):
 			for line_no, line in enumerate(fp):
 				yield line_no, line
 
-
 class writef(object):
 
-	def __init__(self, outFile):
+	def __init__(self, outFile='-'):
 		super(writef, self).__init__()
 		self.outFile = outFile
 
@@ -90,9 +54,7 @@ class writef(object):
 	def close(self):
 		log.debug('Closing: "{}"'.format('-' if type(self.outFile) == str else self.outFile.name))
 
-
-
-def match(line_no, line, searches, index, cut, ignore, include):
+def match(line, searches, line_no=None, index=None, cut=False, ignore=False, include=True):
 
 	if cut:
 		start, end = cut
@@ -105,20 +67,20 @@ def match(line_no, line, searches, index, cut, ignore, include):
 	for s in searches:
 
 		regex = re.compile(s['regex'])
-		strftime = s['strftime']
+		strptime = s['strptime']
 
-		matches += list((strftime, match) for match in regex.finditer(line, start, end))
+		matches += list((strptime, match) for match in regex.finditer(line, start, end))
 
 
 	# Reorder the matches otherwise index is going to be wrong
 	# There is no guarantee that the order we found the matches in are in order
 	order = []
 	for m in matches:
-		strftime, match = m
+		strptime, match = m
 
 		order.append(match.start())
 
-	matches = [x for _,x in sorted(zip(order,matches))]
+	matches = [x for _,x in sorted(zip(order, matches))]
 
 	# Only return the correct match if index is set
 	if type(index) == int:
@@ -145,8 +107,7 @@ def match(line_no, line, searches, index, cut, ignore, include):
 	else:
 		return matches
 
-
-def replace(line_no, line, replace, strftime, matchobj, ignore, offset=False):
+def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offset=False):
 
 	# If given an offset, it is presumed the start and end values will need adjusting
 	start, end = matchobj.start(), matchobj.end()
@@ -158,7 +119,7 @@ def replace(line_no, line, replace, strftime, matchobj, ignore, offset=False):
 
 	# Try and parse the old date to datetime - if it fails make sure we have ignore
 	try:
-		new_date = datetime.strptime(old_date, strftime)
+		new_date = datetime.strptime(old_date, strptime)
 	except ValueError as e:
 		if not ignore:
 			raise FormatError(e)
@@ -170,15 +131,50 @@ def replace(line_no, line, replace, strftime, matchobj, ignore, offset=False):
 		new_date = new_date.replace(year=datetime.now().year)
 
 	# Get the new timestamp as a string using args.replace value
-	new_date_str = new_date.strftime(replace)
+	new_date_str = new_date.strftime(strftime)
 
 	# Construct new line
 	new_line = line[:start] + new_date_str + line[end:]
 
 	return new_line
 
-
 if __name__ == '__main__':
+
+	import argparse, re, sys, logging
+	from datetime import datetime
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-v', '--verbose', action='store_true', help='Print debug information to stderr')
+
+	subparsers = parser.add_subparsers(help='')
+
+	enquire_parser = subparsers.add_parser('enquire')
+	enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search and replace strings')
+
+	fileout_parser = subparsers.add_parser('fileout')
+	fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
+	fileout_parser.add_argument('--outfile', type=str, required=False, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
+	fileout_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} enquire --search'.format(sys.argv[0]))
+	fileout_parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%d/%m/%y %H:%M"', help='Translate the found date/time to this strptime format - you can get a list of available formats using: {} enquire --search'.format(sys.argv[0]))
+	fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
+	fileout_parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
+	fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
+	fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
+
+	# timesketch_parser = subparsers.add_parser('timesketch')
+
+	args = parser.parse_args()
+
+
+	if args.verbose:
+		method = sys.argv[2]
+		logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.DEBUG)
+	else:
+		method = sys.argv[1]
+		logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.CRITICAL)
+
+	log = logging.getLogger('timestomper')
+
 
 	if method == 'enquire':
 		if args.search:
@@ -190,13 +186,13 @@ if __name__ == '__main__':
 
 				for t in types:
 					regex = t['regex']
-					strftime = t['strftime']
+					strptime = t['strptime']
 
-					print('{0:>15}Regex: "{1}"\n{0:>15}strftime: {2}\n'.format(' ', regex, strftime))
+					print('{0:>15}Regex: "{1}"\n{0:>15}strptime: "{2}"\n'.format(' ', regex, strptime))
 
 			print('Output formats:')
 			for k,v in fmts.out_strftime.items():
-				print('{:>15}: {}'.format(k,v))
+				print('{:>15}: "{}"'.format(k,v))
 
 		exit(0)
 
@@ -238,9 +234,9 @@ if __name__ == '__main__':
 						if new_line_len < prev_line_len:
 							offset = offset * -1
 
-						strftime, matchobj = m
+						strptime, matchobj = m
 
-						new_line = replace(line_no=line_no, line=new_line, replace=args.replace, strftime=strftime, matchobj=matchobj, ignore=args.ignore, offset=offset)
+						new_line = replace(line_no=line_no, line=new_line, strftime=args.replace, strptime=strptime, matchobj=matchobj, ignore=args.ignore, offset=offset)
 						new_line_len = len(new_line)
 
 
