@@ -48,7 +48,7 @@ If there is the possibility of the wrong timestamps being converted (or multiple
                             are ommited from output
 
 
-## formats .py
+## formats\.py
 This file contains a list of common dates and times and their regex.
 
 #### searches
@@ -83,7 +83,10 @@ In the case of a missing year, the year is set to the present.
 
 This section allows you to quickly provide a format as a string rather than a format string on the command line. Defaults to '%Y%m%d_%H%M' for easy sorting
 
+## example_import\.py
+
+This file gives examples to how to utilise the functions in another script. Explanations embedded in the file
+
 ## Possible next steps:
 
-- \"Class\"ify the whole process so it can be imported
 - Integrate into a simple Django app for easier use and auto upload to certain services (possibly timesketch)
