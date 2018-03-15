@@ -1,6 +1,6 @@
 # Timestomper
 
-This app converts timestamps in text files, line-by-line. It was made to combat the non-standardised date/time fields tools output.
+This app converts timestamps in text files, line-by-line. It was made to combat the non-standardised date/time fields tools output. Pull requests welcome!
 
 Give it an input file (\-\-infile) and the format type of dates and/or times in that file (\-\-search), then an output format (\-\-replace).
 
@@ -10,6 +10,7 @@ If there is the possibility of the wrong timestamps being converted (or multiple
 
 \-\-cut - allows the matching engine to be applied to the section of the line between the start and end values (first character starts at 0).
 \-\-index - If there are multiple matches, the index can be set to only replace that one particular timestamp. If \-\-index is not given all matched timestamps on the line are replaced. N.B. Matches are ordered based on their indices of the regex match - not usually a problem unless the input can have overlapping timestamps (and bad regex matches...).
+
 
 ## \-\-help
 
@@ -80,11 +81,9 @@ In the case of a missing year, the year is set to the present.
 
 #### out_strftime
 
-This section allows you to quickly provide a format as a string rather than a format string on the command line. Defaults to '%Y%m%d_%H%M'
-
-Pull requests welcome to update the list of formats!
+This section allows you to quickly provide a format as a string rather than a format string on the command line. Defaults to '%Y%m%d_%H%M' for easy sorting
 
 ## Possible next steps:
 
-- Classify the whole process
+- "Class"ify the whole process so it can be imported
 - Integrate into a simple Django app for easier use and auto upload to certain services (possibly timesketch)

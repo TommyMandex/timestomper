@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-# Change to module/class?
-
 from __future__ import print_function
 
 import argparse, re, sys, logging
@@ -18,40 +16,6 @@ class ReplaceError(Exception):
 class FormatError(Exception):
 	pass
 
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-v', '--verbose', action='store_true', help='Print debug information to stderr')
-
-subparsers = parser.add_subparsers(help='')
-
-enquire_parser = subparsers.add_parser('enquire')
-enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search and replace strings')
-
-fileout_parser = subparsers.add_parser('fileout')
-fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
-fileout_parser.add_argument('--outfile', type=str, required=False, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
-fileout_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time format that will be found in the file - you can get a list of available searches using: {} enquire --search'.format(sys.argv[0]))
-fileout_parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%d/%m/%y %H:%M"', help='Translate the found date/time to this format - you can get a list of available formats using: {} enquire --search'.format(sys.argv[0]))
-fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
-fileout_parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
-fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
-fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
-
-# timesketch_parser = subparsers.add_parser('timesketch')
-
-args = parser.parse_args()
-
-
-if args.verbose:
-	method = sys.argv[2]
-	logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.DEBUG)
-else:
-	method = sys.argv[1]
-	logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.CRITICAL)
-
-log = logging.getLogger('timestomper')
-
-
 def loadf(inFile):
 
 	if inFile == '-':
@@ -64,7 +28,6 @@ def loadf(inFile):
 		with open(inFile) as fp:
 			for line_no, line in enumerate(fp):
 				yield line_no, line
-
 
 class writef(object):
 
@@ -89,8 +52,6 @@ class writef(object):
 
 	def close(self):
 		log.debug('Closing: "{}"'.format('-' if type(self.outFile) == str else self.outFile.name))
-
-
 
 def match(line_no, line, searches, index, cut, ignore, include):
 
@@ -145,7 +106,6 @@ def match(line_no, line, searches, index, cut, ignore, include):
 	else:
 		return matches
 
-
 def replace(line_no, line, replace, strftime, matchobj, ignore, offset=False):
 
 	# If given an offset, it is presumed the start and end values will need adjusting
@@ -177,8 +137,40 @@ def replace(line_no, line, replace, strftime, matchobj, ignore, offset=False):
 
 	return new_line
 
-
 if __name__ == '__main__':
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-v', '--verbose', action='store_true', help='Print debug information to stderr')
+
+	subparsers = parser.add_subparsers(help='')
+
+	enquire_parser = subparsers.add_parser('enquire')
+	enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search and replace strings')
+
+	fileout_parser = subparsers.add_parser('fileout')
+	fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
+	fileout_parser.add_argument('--outfile', type=str, required=False, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
+	fileout_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time format that will be found in the file - you can get a list of available searches using: {} enquire --search'.format(sys.argv[0]))
+	fileout_parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%d/%m/%y %H:%M"', help='Translate the found date/time to this format - you can get a list of available formats using: {} enquire --search'.format(sys.argv[0]))
+	fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
+	fileout_parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
+	fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
+	fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
+
+	# timesketch_parser = subparsers.add_parser('timesketch')
+
+	args = parser.parse_args()
+
+
+	if args.verbose:
+		method = sys.argv[2]
+		logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.DEBUG)
+	else:
+		method = sys.argv[1]
+		logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.CRITICAL)
+
+	log = logging.getLogger('timestomper')
+
 
 	if method == 'enquire':
 		if args.search:
