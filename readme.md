@@ -14,7 +14,7 @@ If there is the possibility of the wrong timestamps being converted (or multiple
 
 ## \-\-help
 
-    usage: convert.py fileout [-h] --infile file.txt [file.txt ...]
+    usage: timestomp.py fileout [-h] --infile file.txt [file.txt ...]
                               [--outfile file.txt] -s
                               {cli-golive,osx-ls,win-dir-us,web-golive,win-dir-uk}
                               [-r "%d/%m/%y %H:%M"] [-c # #] [-i #] [--include]
@@ -29,10 +29,10 @@ If there is the possibility of the wrong timestamps being converted (or multiple
       -s {cli-golive,osx-ls,win-dir-us,web-golive,win-dir-uk}, --search {cli-golive,osx-ls,win-dir-us,web-golive,win-dir-uk}
                             Type of date/time format that will be found in the
                             file - you can get a list of available searches using:
-                            ./convert.py enquire --search
+                            ./timestomp.py enquire --search
       -r "%d/%m/%y %H:%M", --replace "%d/%m/%y %H:%M"
                             Translate the found date/time to this format - you can
-                            get a list of available formats using: ./convert.py
+                            get a list of available formats using: ./timestomp.py
                             enquire --search
       -c # #, --cut # #     Start and end position in lines to look for timestamps
                             - cut operation is performed before index evaluation
@@ -85,5 +85,5 @@ This section allows you to quickly provide a format as a string rather than a fo
 
 ## Possible next steps:
 
-- "Class"ify the whole process so it can be imported
+- \"Class\"ify the whole process so it can be imported
 - Integrate into a simple Django app for easier use and auto upload to certain services (possibly timesketch)
