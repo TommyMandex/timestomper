@@ -1,6 +1,6 @@
 # Timestomper
 
-This app converts timestamps in text files, line-by-line. It was made to combat the non-standardised date/time fields tools output.
+This app converts timestamps in text files, line-by-line. It was made to combat the non-standardised date/time fields tools output. Pull requests welcome!
 
 Give it an input file (\-\-infile) and the format type of dates and/or times in that file (\-\-search), then an output format (\-\-replace).
 
@@ -11,9 +11,10 @@ If there is the possibility of the wrong timestamps being converted (or multiple
 \-\-cut - allows the matching engine to be applied to the section of the line between the start and end values (first character starts at 0).
 \-\-index - If there are multiple matches, the index can be set to only replace that one particular timestamp. If \-\-index is not given all matched timestamps on the line are replaced. N.B. Matches are ordered based on their indices of the regex match - not usually a problem unless the input can have overlapping timestamps (and bad regex matches...).
 
+
 ## \-\-help
 
-    usage: convert.py fileout [-h] --infile file.txt [file.txt ...]
+    usage: timestomp.py fileout [-h] --infile file.txt [file.txt ...]
                               [--outfile file.txt] -s
                               {cli-golive,osx-ls,win-dir-us,web-golive,win-dir-uk}
                               [-r "%d/%m/%y %H:%M"] [-c # #] [-i #] [--include]
@@ -28,10 +29,10 @@ If there is the possibility of the wrong timestamps being converted (or multiple
       -s {cli-golive,osx-ls,win-dir-us,web-golive,win-dir-uk}, --search {cli-golive,osx-ls,win-dir-us,web-golive,win-dir-uk}
                             Type of date/time format that will be found in the
                             file - you can get a list of available searches using:
-                            ./convert.py enquire --search
+                            ./timestomp.py enquire --search
       -r "%d/%m/%y %H:%M", --replace "%d/%m/%y %H:%M"
                             Translate the found date/time to this format - you can
-                            get a list of available formats using: ./convert.py
+                            get a list of available formats using: ./timestomp.py
                             enquire --search
       -c # #, --cut # #     Start and end position in lines to look for timestamps
                             - cut operation is performed before index evaluation
@@ -47,7 +48,7 @@ If there is the possibility of the wrong timestamps being converted (or multiple
                             are ommited from output
 
 
-## formats .py
+## formats\.py
 This file contains a list of common dates and times and their regex.
 
 #### searches
@@ -80,11 +81,12 @@ In the case of a missing year, the year is set to the present.
 
 #### out_strftime
 
-This section allows you to quickly provide a format as a string rather than a format string on the command line. Defaults to '%Y%m%d_%H%M'
+This section allows you to quickly provide a format as a string rather than a format string on the command line. Defaults to '%Y%m%d_%H%M' for easy sorting
 
-Pull requests welcome to update the list of formats!
+## example_import\.py
+
+This file gives examples to how to utilise the functions in another script. Explanations embedded in the file
 
 ## Possible next steps:
 
-- Classify the whole process
 - Integrate into a simple Django app for easier use and auto upload to certain services (possibly timesketch)
