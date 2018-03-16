@@ -161,7 +161,16 @@ if __name__ == '__main__':
 	fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
 	fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
 
-	# timesketch_parser = subparsers.add_parser('timesketch')
+	timesketch_parser = subparsers.add_parser('timesketch')
+	timesketch_parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.csv', help='File to parse. - is stdin')
+	timesketch_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} enquire --search'.format(sys.argv[0]))
+	timesketch_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
+	timesketch_parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Timestamp to be used in the timesketch log')
+	# Timesketch specific options
+	timesketch_parser.add_argument('-d', '--tsdesc', type=str, required=True, metavar='file created', help='A timestamp description to apply to the logs')
+	timesketch_parser.add_argument('-t', '--tags', type=str, nargs='+', metavar=('login', 'bad_user'), help='Tags to append to the logs')
+	timesketch_parser.add_argument('-f', '--fields', type=str, action='append', metavar=('delim col_name'), nargs='+', help='Copies value from line and inserts into a seperate column. Delimiter can be \\t or ,')
+
 
 	args = parser.parse_args()
 
@@ -257,3 +266,26 @@ if __name__ == '__main__':
 
 
 		write_file.close()
+
+	elif method == 'timesketch':
+
+		# Get line
+		# Get index
+		# Replace
+		# Add TS specific features
+
+		# Ignore all lines that done have a time
+
+
+
+		print("""
+		message = String with an informative message of the event
+		timestamp = Timestamp as microseconds since Unix epoch
+		datetime = 2015-07-24T19:01:01+00:00
+		timestamp_desc = String explaining what type of timestamp it is. E.g file created
+
+		message,timestamp,datetime,timestamp_desc,extra_field_1,extra_field_2
+		A message,1331698658276340,2015-07-24T19:01:01+00:00,Write time,foo,bar
+		""")
+
+
