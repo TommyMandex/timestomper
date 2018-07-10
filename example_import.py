@@ -46,6 +46,5 @@ for line_no, line in loadf('./examples/free-win7-dir-uk.txt'):
 		# Reward!!
 	print([line_no, line])
 
-
 # Finally, close the output file
 f.close()
