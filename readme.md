@@ -87,6 +87,11 @@ This section allows you to quickly provide a format as a string rather than a fo
 
 This file gives examples to how to utilise the functions in another script. Explanations embedded in the file
 
+## Alias
+
+Add the following to your.bashrc (etc.) to limit typing :)
+    alias us2dfir='timestomp.py generic --infile - --outfile - -s us-slash --ignore --include'
+
 ## Possible next steps:
 
 - Integrate into a simple Django app for easier use and auto upload to certain services
