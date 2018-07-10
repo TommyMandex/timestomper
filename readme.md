@@ -30,7 +30,7 @@ If there is the possibility of the wrong timestamps being converted (or multiple
                             Type of date/time format that will be found in the
                             file - you can get a list of available searches using:
                             ./timestomp.py enquire --search
-      -r "%d/%m/%y %H:%M", --replace "%d/%m/%y %H:%M"
+      -r "%Y/%m/%d %H:%M:%S", --replace "%Y/%m/%d %H:%M:%S"
                             Translate the found date/time to this format - you can
                             get a list of available formats using: ./timestomp.py
                             enquire --search
@@ -89,4 +89,4 @@ This file gives examples to how to utilise the functions in another script. Expl
 
 ## Possible next steps:
 
-- Integrate into a simple Django app for easier use and auto upload to certain services (possibly timesketch)
+- Integrate into a simple Django app for easier use and auto upload to certain services

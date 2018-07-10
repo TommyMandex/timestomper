@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import print_function
-import re, sys, logging
+import re, sys, logging, csv
 from datetime import datetime
 
 
@@ -30,29 +30,35 @@ def loadf(inFile):
 			for line_no, line in enumerate(fp):
 				yield line_no, line
 
+
 class writef(object):
 
 	def __init__(self, outFile='-'):
 		super(writef, self).__init__()
+
 		self.outFile = outFile
 
 		if outFile == '-':
 			log.debug('Opening "stdout"')
+			self.outFile = sys.stdout
 		else:
 			log.debug('Opening for write: "{}"'.format(self.outFile))
 			self.outFile = open(outFile, mode='wb', buffering=1)
 
+	def get_file_obj(self):
+		return self
 
 	def write(self, line):
 
 		line_no, line = line
 
 		log.debug('Writing line [{}] to "{}" | {}'.format(line_no, ('-' if type(self.outFile) == str else self.outFile.name), [line]))
-		print(line, end='') if type(self.outFile) == str else self.outFile.write(line)	
+		print(line, end='') if type(self.outFile) == str else self.outFile.write(line)
 
 
 	def close(self):
 		log.debug('Closing: "{}"'.format('-' if type(self.outFile) == str else self.outFile.name))
+
 
 def match(line, searches, line_no=None, index=None, cut=False, ignore=False, include=True):
 
@@ -148,20 +154,17 @@ if __name__ == '__main__':
 
 	subparsers = parser.add_subparsers(help='')
 
-	enquire_parser = subparsers.add_parser('enquire')
-	enquire_parser.add_argument('-s', '--search', action='store_true', required=True, help='Show available search and replace strings')
+	format_parser = subparsers.add_parser('formats')
 
-	fileout_parser = subparsers.add_parser('fileout')
+	fileout_parser = subparsers.add_parser('generic')
 	fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
 	fileout_parser.add_argument('--outfile', type=str, required=False, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
-	fileout_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} enquire --search'.format(sys.argv[0]))
-	fileout_parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%d/%m/%y %H:%M"', help='Translate the found date/time to this strptime format - you can get a list of available formats using: {} enquire --search'.format(sys.argv[0]))
+	fileout_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} formats --search'.format(sys.argv[0]))
+	fileout_parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%Y-%m-%d %H:%M"', help='Translate the found date/time to this strptime format - you can get a list of available formats using: {} formats --search'.format(sys.argv[0]))
 	fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
 	fileout_parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
 	fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
 	fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
-
-	# timesketch_parser = subparsers.add_parser('timesketch')
 
 	args = parser.parse_args()
 
@@ -176,28 +179,25 @@ if __name__ == '__main__':
 	log = logging.getLogger('timestomper')
 
 
-	if method == 'enquire':
-		if args.search:
-			
-			print('Search formats:')
+	if method == 'formats':
+		print('Search formats:')
 
-			for name, types in fmts.searches.items():
-				print('{:>17}:'.format(name))
+		for name, types in fmts.searches.items():
+			print('{:>17}:'.format(name))
 
-				for t in types:
-					regex = t['regex']
-					strptime = t['strptime']
+			for t in types:
+				regex = t['regex']
+				strptime = t['strptime']
 
-					print('{0:>15}Regex: "{1}"\n{0:>15}strptime: "{2}"\n'.format(' ', regex, strptime))
+				print('{0:>15}Regex: "{1}"\n{0:>15}strptime: "{2}"\n'.format(' ', regex, strptime))
 
-			print('Output formats:')
-			for k,v in fmts.out_strftime.items():
-				print('{:>15}: "{}"'.format(k,v))
+		print('Output formats:')
+		for k,v in fmts.out_strftime.items():
+			print('{:>15}: "{}"'.format(k,v))
 
 		exit(0)
 
-
-	elif method == 'fileout':
+	elif method == 'generic':
 
 		# Check replace format
 		if args.replace in fmts.out_strftime:
@@ -213,6 +213,8 @@ if __name__ == '__main__':
 
 
 		write_file = writef(args.outfile)
+		write_file = write_file.get_file_obj()
+
 		searches = fmts.searches[args.search]
 
 		for file in args.infile:
@@ -248,12 +250,11 @@ if __name__ == '__main__':
 
 				# This line didn't match, but we were asked to include non-matching
 				elif args.include:
-					# log.debug('No match, but included | {}'.format([line]))
+					log.debug('No match, but included | {}'.format([line]))
 					write_file.write((line_no, line))
 
 				# The line didn't match, and we don't care about them
 				elif args.ignore:
 					continue
-
 
 		write_file.close()
