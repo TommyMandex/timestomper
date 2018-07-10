@@ -67,5 +67,5 @@ out_strftime = {
 	'uk'		: '%d/%m/%y %H:%M:%S',
 	'us'		: '%m/%d/%y %H:%M:%S',
 	'year'		: '%y-%m-%d %H:%M:%S',
-	'default'	: '%Y-%m-%d %H:%M:%S',
+	'default'	: '%Y/%m/%d %H:%M:%S',
 }
