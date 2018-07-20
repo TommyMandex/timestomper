@@ -16,6 +16,8 @@ class ReplaceError(Exception):
 	pass
 class FormatError(Exception):
 	pass
+class MissingYear(Exception):
+	pass
 
 def loadf(inFile):
 
@@ -58,6 +60,60 @@ class writef(object):
 
 	def close(self):
 		log.debug('Closing: "{}"'.format('-' if type(self.outFile) == str else self.outFile.name))
+
+
+def time2re(fmt_string, regex=True):
+	mappings = {
+		'a': '(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)',
+		'A': '(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)',
+		'w': '[0-6]',
+		'd': '[0-3][0-9]',
+		'-d': '[0-9]{1,2}',
+		'b': '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)',
+		'B': '(?:January|February|March|April|May|June|July|August|September|October|November|December)',
+		'm': '[0-1][0-9]',
+		'-m': '[0-9]{1,2}',
+		'y': '[0-9]{2}',
+		'Y': '[0-9]{4}',
+		'H': '[0-1][0-9]',
+		'-H': '[0-9]{1,2}',
+		'I': '[0-1][0-9]',
+		'-I': '[0-9]{1,2}',
+		'p': '[AP]M',
+		'M': '[0-5][0-9]',
+		'-M': '[0-9]{1,2}',
+		'S': '[0-5][0-9]',
+		'-S': '[0-9]{1,2}',
+		'f': '[0-9]{6}',
+		'z': '(?:\+|-){0,1}(?:[0-1][0-9][0-5][0-9]){0,1}',
+		'Z': '[A-Z]{2,5}',
+		'j': '[0-3][0-9]{2}',
+		'-j': '[0-9]{1,3}',
+		'U': '[0-5][0-9]',
+		'W': '[0-5][0-9]',
+		'%': '%',
+	}
+
+	regex_safe = ['{', '}', '[', ']', '(', ')', '+', '.', '?', '|', '$', '^', '\\']
+
+	def enumerate_fmt_string(fmt_string):
+		for i in fmt_string:
+			yield i
+
+	final_re = []
+	chars = enumerate_fmt_string(fmt_string)
+	for c in chars:
+		s = ''
+		if c == '%':
+			s = next(chars)
+			if s == '-':
+				s += next(chars)
+			final_re.append(mappings[s])
+			continue
+		final_re.append('\\' + c if c in regex_safe else c)
+
+	return (re.compile(''.join(final_re)) if regex else ''.join(final_re))
+
 
 
 def match(line, searches, line_no=None, index=None, cut=False, ignore=False, include=True):
@@ -113,7 +169,7 @@ def match(line, searches, line_no=None, index=None, cut=False, ignore=False, inc
 	else:
 		return matches
 
-def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offset=False):
+def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offset=False, year=False, highlight=False):
 
 	# If given an offset, it is presumed the start and end values will need adjusting
 	start, end = matchobj.start(), matchobj.end()
@@ -132,17 +188,27 @@ def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offs
 		else:
 			return
 
-	# Some timestamps dont include a year, so add the current
+	# Some timestamps dont include a year
 	if new_date.year == 1900:
-		new_date = new_date.replace(year=datetime.now().year)
+		if ignore and not year:
+			pass
+		elif not year:
+			raise MissingYear(('Year not found in date, define with --year, or --ignore: [{}] "{}"'.format(line_no, [line])))
+		else:
+			new_date = new_date.replace(year=year)
 
 	# Get the new timestamp as a string using args.replace value
 	new_date_str = new_date.strftime(strftime)
 
-	# Construct new line
-	new_line = line[:start] + new_date_str + line[end:]
+	# Construct new line, highlight selections if asked
+	if highlight:
+		new_line = '{}\033[1;41m{}\033[0m{}'.format(line[:start], old_date, line[end:])
+	else:
+		new_line = '{}{}{}'.format(line[:start], new_date_str, line[end:])
 
 	return new_line
+
+
 
 if __name__ == '__main__':
 
@@ -159,12 +225,18 @@ if __name__ == '__main__':
 	fileout_parser = subparsers.add_parser('generic')
 	fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
 	fileout_parser.add_argument('--outfile', type=str, required=False, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
+
+
 	fileout_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} formats --search'.format(sys.argv[0]))
+	fileout_parser.add_argument('--re_search', type=str, required=False, help='')
+
 	fileout_parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%Y-%m-%d %H:%M"', help='Translate the found date/time to this strptime format - you can get a list of available formats using: {} formats --search'.format(sys.argv[0]))
 	fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
 	fileout_parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
 	fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
+	fileout_parser.add_argument('--year', type=int, default=False, metavar='1997', help='Some dates dont contain the year. Set those dates with this flag')
 	fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
+	fileout_parser.add_argument('--test', action='store_true', required=False, help='Dont actually modify the lines, only highlight the text to be changed')
 
 	args = parser.parse_args()
 
@@ -194,6 +266,45 @@ if __name__ == '__main__':
 		print('Output formats:')
 		for k,v in fmts.out_strftime.items():
 			print('{:>15}: "{}"'.format(k,v))
+
+
+		print("""
+
+Python's strftime directives
+
+Code	Meaning	Example
+%a	Weekday as locale's abbreviated name. Mon
+%A	Weekday as locale's full name.	Monday
+%w	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday.	1
+%d	Day of the month as a zero-padded decimal number.	30
+%-d	Day of the month as a decimal number. (Platform specific)	30
+%b	Month as locale's abbreviated name.	Sep
+%B	Month as locale's full name.	September
+%m	Month as a zero-padded decimal number.	09
+%-m	Month as a decimal number. (Platform specific)	9
+%y	Year without century as a zero-padded decimal number.	13
+%Y	Year with century as a decimal number.	2013
+%H	Hour (24-hour clock) as a zero-padded decimal number.	07
+%-H	Hour (24-hour clock) as a decimal number. (Platform specific)	7
+%I	Hour (12-hour clock) as a zero-padded decimal number.	07
+%-I	Hour (12-hour clock) as a decimal number. (Platform specific)	7
+%p	Locale's equivalent of either AM or PM.	AM
+%M	Minute as a zero-padded decimal number.	06
+%-M	Minute as a decimal number. (Platform specific)	6
+%S	Second as a zero-padded decimal number.	05
+%-S	Second as a decimal number. (Platform specific)	5
+%f	Microsecond as a decimal number, zero-padded on the left.	000000
+%z	UTC offset in the form +HHMM or -HHMM (empty string if the the object is naive).	
+%Z	Time zone name (empty string if the object is naive).	
+%j	Day of the year as a zero-padded decimal number.	273
+%-j	Day of the year as a decimal number. (Platform specific)	273
+%U	Week number of the year (Sunday as the first day of the week) as a zero padded decimal number. All days in a new year preceding the first Sunday are considered to be in week 0.	39
+%W	Week number of the year (Monday as the first day of the week) as a decimal number. All days in a new year preceding the first Monday are considered to be in week 0.	39
+%c	Locale's appropriate date and time representation.	Mon Sep 30 07:06:05 2013
+%x	Locale's appropriate date representation.	09/30/13
+%X	Locale's appropriate time representation.	07:06:05
+%%	A literal '%' character.	%
+		""")
 
 		exit(0)
 
@@ -238,14 +349,17 @@ if __name__ == '__main__':
 
 						strptime, matchobj = m
 
-						new_line = replace(line_no=line_no, line=new_line, strftime=args.replace, strptime=strptime, matchobj=matchobj, ignore=args.ignore, offset=offset)
+						new_line = replace(line_no=line_no, line=new_line, strftime=args.replace, strptime=strptime, matchobj=matchobj, ignore=args.ignore, offset=offset, year=args.year, highlight=args.test)
 						new_line_len = len(new_line)
 
 
 					if new_line:
 						write_file.write((line_no, new_line))
 					else:
-						raise ReplaceError(('Replace failed: [{}] "{}"'.format(line_no, [line])))
+						if args.test:
+							raise ReplaceError(('Highlight failed: [{}] "{}"'.format(line_no, [line])))
+						else:
+							raise ReplaceError(('Replace failed: [{}] "{}"'.format(line_no, [line])))
 
 
 				# This line didn't match, but we were asked to include non-matching
