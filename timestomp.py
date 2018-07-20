@@ -71,17 +71,17 @@ def time2re(fmt_string, regex=True):
 		'-d': '[0-9]{1,2}',
 		'b': '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)',
 		'B': '(?:January|February|March|April|May|June|July|August|September|October|November|December)',
-		'm': '[0-1][0-9]',
-		'-m': '[0-9]{1,2}',
-		'y': '[0-9]{2}',
-		'Y': '[0-9]{4}',
-		'H': '[0-1][0-9]',
+		'm': '(0[1-9]|1[012])',
+		'-m': '[1-12]{1,2}',
+		'y': '[0-9]{2}',		# Modded
+		'Y': '[0-9]{4}',		# Modded
+		'H': '[0-2][0-9]',
 		'-H': '[0-9]{1,2}',
 		'I': '[0-1][0-9]',
 		'-I': '[0-9]{1,2}',
 		'p': '[AP]M',
-		'M': '[0-5][0-9]',
-		'-M': '[0-9]{1,2}',
+		'M': '[0-5][0-9]',		# Modded
+		'-M': '[0-59]{1,2}',	# Modded
 		'S': '[0-5][0-9]',
 		'-S': '[0-9]{1,2}',
 		'f': '[0-9]{6}',
@@ -112,7 +112,7 @@ def time2re(fmt_string, regex=True):
 			continue
 		final_re.append('\\' + c if c in regex_safe else c)
 
-	return (re.compile(''.join(final_re)) if regex else ''.join(final_re))
+	return (''.join(final_re)) if regex else ''.join(final_re)
 
 
 
@@ -202,7 +202,7 @@ def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offs
 
 	# Construct new line, highlight selections if asked
 	if highlight:
-		new_line = '{}\033[1;41m{}\033[0m{}'.format(line[:start], old_date, line[end:])
+		new_line = '{}\033[1;41m{}\033[0m{}'.format(line[:start], new_date_str, line[end:])
 	else:
 		new_line = '{}{}{}'.format(line[:start], new_date_str, line[end:])
 
@@ -218,40 +218,33 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-v', '--verbose', action='store_true', help='Print debug information to stderr')
 
-	subparsers = parser.add_subparsers(help='')
+	parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
+	parser.add_argument('--outfile', type=str, required=False, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
 
-	format_parser = subparsers.add_parser('formats')
+	parser.add_argument('-s', '--search', type=str, metavar='{} OR "%Y-%m-%d %H:%M"'.format(fmts.searches.keys()), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} formats --search'.format(sys.argv[0]))
 
-	fileout_parser = subparsers.add_parser('generic')
-	fileout_parser.add_argument('--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
-	fileout_parser.add_argument('--outfile', type=str, required=False, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
+	parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%Y-%m-%d %H:%M"', help='Translate the found date/time to this strptime format - you can get a list of available formats using: {} formats --search'.format(sys.argv[0]))
+	parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
+	parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
+	parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
+	parser.add_argument('--year', type=int, default=False, metavar='1997', help='Some dates dont contain the year. Set those dates with this flag')
+	parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
+	parser.add_argument('--test', action='store_true', required=False, help='Dont actually modify the lines, only highlight the text to be changed')
 
-
-	fileout_parser.add_argument('-s', '--search', type=str, required=True, choices=fmts.searches.keys(), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} formats --search'.format(sys.argv[0]))
-	fileout_parser.add_argument('--re_search', type=str, required=False, help='')
-
-	fileout_parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%Y-%m-%d %H:%M"', help='Translate the found date/time to this strptime format - you can get a list of available formats using: {} formats --search'.format(sys.argv[0]))
-	fileout_parser.add_argument('-c', '--cut', type=int, required=False, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
-	fileout_parser.add_argument('-i', '--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
-	fileout_parser.add_argument('--include', action='store_true', required=False, help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
-	fileout_parser.add_argument('--year', type=int, default=False, metavar='1997', help='Some dates dont contain the year. Set those dates with this flag')
-	fileout_parser.add_argument('--ignore', action='store_true', required=False, help='Ignore non-critical errors. If --include is not specified, lines which would normal generate an error are ommited from output')
-	fileout_parser.add_argument('--test', action='store_true', required=False, help='Dont actually modify the lines, only highlight the text to be changed')
+	parser.add_argument('--formats', action='store_true', required=False, help='Print the preloaded search formats')
 
 	args = parser.parse_args()
 
 
 	if args.verbose:
-		method = sys.argv[2]
 		logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.DEBUG)
 	else:
-		method = sys.argv[1]
 		logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.CRITICAL)
 
 	log = logging.getLogger('timestomper')
 
 
-	if method == 'formats':
+	if args.formats:
 		print('Search formats:')
 
 		for name, types in fmts.searches.items():
@@ -308,7 +301,7 @@ Code	Meaning	Example
 
 		exit(0)
 
-	elif method == 'generic':
+	else:
 
 		# Check replace format
 		if args.replace in fmts.out_strftime:
@@ -326,7 +319,12 @@ Code	Meaning	Example
 		write_file = writef(args.outfile)
 		write_file = write_file.get_file_obj()
 
-		searches = fmts.searches[args.search]
+
+		if args.search in fmts.searches:
+			searches = fmts.searches[args.search]
+		else:
+			searches = [{'regex': time2re(args.search), 'strptime': args.search}]
+
 
 		for file in args.infile:
 			for line_no, line in loadf(file):
