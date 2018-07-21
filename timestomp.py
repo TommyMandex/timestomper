@@ -216,6 +216,8 @@ def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offs
 
 if __name__ == '__main__':
 
+  import argparse
+
   parser = argparse.ArgumentParser()
 
   parser.add_argument('--formats', action='store_true', help='Print the preloaded search formats')
