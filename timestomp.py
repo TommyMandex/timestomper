@@ -7,6 +7,7 @@ import sys
 import logging
 from datetime import datetime
 
+_version_ = '1.0'
 
 import formats as fmts
 log = logging.getLogger('timestomper')
@@ -194,7 +195,7 @@ def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offs
   # Some timestamps dont include a year
   if new_date.year == 1900:
     if ignore and not year:
-      pass
+      new_date.year = datetime.now().year
     elif not year:
       raise MissingYear(('Year not found in date, define with --year, or --ignore: [{}] "{}"'.format(line_no, [line])))
     else:
@@ -215,17 +216,14 @@ def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offs
 
 if __name__ == '__main__':
 
-  import argparse, re, sys, logging
-  from datetime import datetime
-
   parser = argparse.ArgumentParser()
 
   parser.add_argument('--formats', action='store_true', help='Print the preloaded search formats')
 
-  parser.add_argument('-i', '--infile', type=str, required=True, nargs='+', metavar='file.txt', help='File to parse. - is stdin')
+  parser.add_argument('-i', '--infile', type=str, default='-', nargs='+', metavar='file.txt', help='File to parse. - is stdin')
   parser.add_argument('-o', '--outfile', type=str, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
 
-  parser.add_argument('-s', '--search', type=str, metavar='{} OR "%Y-%m-%d %H:%M"'.format(', '.join(fmts.searches.keys()[:3])), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} formats --search'.format(sys.argv[0]))
+  parser.add_argument('-s', '--search', type=str, metavar='{} OR "%Y-%m-%d %H:%M"'.format(', '.join(fmts.searches.keys()[:3])), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} --formats'.format(sys.argv[0]))
   parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%Y-%m-%d %H:%M"', help='Translate the found date/time to this strptime format - you can get a list of available formats using: {} formats --search'.format(sys.argv[0]))
   parser.add_argument('-y', '--year', type=int, default=False, metavar='1997', help='Some dates dont contain the year. Set those dates with this flag')
 
@@ -250,7 +248,7 @@ if __name__ == '__main__':
 
 
   if args.formats:
-    print('Search formats:')
+    print('\nSearch formats:')
 
     for name, types in fmts.searches.items():
       print('{:>17}:'.format(name))
@@ -267,46 +265,54 @@ if __name__ == '__main__':
 
 
     print("""
+Python's strftime directives:
 
-Python's strftime directives
-
-Code  Meaning Example
-%a  Weekday as locale's abbreviated name. Mon
-%A  Weekday as locale's full name.  Monday
-%w  Weekday as a decimal number, where 0 is Sunday and 6 is Saturday. 1
-%d  Day of the month as a zero-padded decimal number. 30
-%-d Day of the month as a decimal number. (Platform specific) 30
-%b  Month as locale's abbreviated name. Sep
-%B  Month as locale's full name.  September
-%m  Month as a zero-padded decimal number.  09
-%-m Month as a decimal number. (Platform specific)  9
-%y  Year without century as a zero-padded decimal number. 13
-%Y  Year with century as a decimal number.  2013
-%H  Hour (24-hour clock) as a zero-padded decimal number. 07
-%-H Hour (24-hour clock) as a decimal number. (Platform specific) 7
-%I  Hour (12-hour clock) as a zero-padded decimal number. 07
-%-I Hour (12-hour clock) as a decimal number. (Platform specific) 7
-%p  Locale's equivalent of either AM or PM. AM
-%M  Minute as a zero-padded decimal number. 06
-%-M Minute as a decimal number. (Platform specific) 6
-%S  Second as a zero-padded decimal number. 05
-%-S Second as a decimal number. (Platform specific) 5
-%f  Microsecond as a decimal number, zero-padded on the left. 000000
-%z  UTC offset in the form +HHMM or -HHMM (empty string if the the object is naive).  
-%Z  Time zone name (empty string if the object is naive). 
-%j  Day of the year as a zero-padded decimal number.  273
-%-j Day of the year as a decimal number. (Platform specific)  273
-%U  Week number of the year (Sunday as the first day of the week) as a zero padded decimal number. All days in a new year preceding the first Sunday are considered to be in week 0.  39
-%W  Week number of the year (Monday as the first day of the week) as a decimal number. All days in a new year preceding the first Monday are considered to be in week 0.  39
-%c  Locale's appropriate date and time representation.  Mon Sep 30 07:06:05 2013
-%x  Locale's appropriate date representation. 09/30/13
-%X  Locale's appropriate time representation. 07:06:05
-%%  A literal '%' character.  %
+Code    Meaning                                                             Example
+%a      Weekday as locale's abbreviated name.                               Mon
+%A      Weekday as locale's full name.                                      Monday
+%w      Weekday as a decimal number, where 0 is Sunday and 6 is Saturday.   1
+%d      Day of the month as a zero-padded decimal number.                   30
+%-d     Day of the month as a decimal number. (Platform specific)           30
+%b      Month as locale's abbreviated name.                                 Sep
+%B      Month as locale's full name.                                        September
+%m      Month as a zero-padded decimal number.                              09
+%-m     Month as a decimal number. (Platform specific)                      9
+%y      Year without century as a zero-padded decimal number.               13
+%Y      Year with century as a decimal number.                              2013
+%H      Hour (24-hour clock) as a zero-padded decimal number.               07
+%-H     Hour (24-hour clock) as a decimal number. (Platform specific)       7
+%I      Hour (12-hour clock) as a zero-padded decimal number.               07
+%-I     Hour (12-hour clock) as a decimal number. (Platform specific)       7
+%p      Locale's equivalent of either AM or PM.                             AM
+%M      Minute as a zero-padded decimal number.                             06
+%-M     Minute as a decimal number. (Platform specific)                     6
+%S      Second as a zero-padded decimal number.                             05
+%-S     Second as a decimal number. (Platform specific)                     5
+%f      Microsecond as a decimal number, zero-padded on the left.           000000
+%z      UTC offset in the form +HHMM or -HHMM (empty string if the the 
+        object is naive).
+%Z      Time zone name (empty string if the object is naive).
+%j      Day of the year as a zero-padded decimal number.                    273
+%-j     Day of the year as a decimal number. (Platform specific)            273
+%U      Week number of the year (Sunday as the first day of the week) as
+        a zero padded decimal number. All days in a new year preceding the
+        first Sunday are considered to be in week 0.                        39
+%W      Week number of the year (Monday as the first day of the week) as
+        a decimal number. All days in a new year preceding the first Monday
+        are considered to be in week 0.                                     39
+%c      Locale's appropriate date and time representation.                  Mon Sep 30 07:06:05 2013
+%x      Locale's appropriate date representation.                           09/30/13
+%X      Locale's appropriate time representation.                           07:06:05
+%%      A literal '%' character.                                            %
     """)
 
     exit(0)
 
   else:
+
+    if not args.search:
+        parser.print_help()
+        exit(0)
 
     # Check replace format
     if args.replace in fmts.out_strftime:

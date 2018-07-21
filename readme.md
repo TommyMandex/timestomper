@@ -14,29 +14,32 @@ If there is the possibility of the wrong timestamps being converted (or multiple
 
 ## \-\-help
 
-    usage: timestomp.py fileout [-h] --infile file.txt [file.txt ...]
-                              [--outfile file.txt] -s
-                              {cli-golive,osx-ls,win-dir-us,web-golive,win-dir-uk}
-                              [-r "%d/%m/%y %H:%M"] [-c # #] [-i #] [--include]
-                              [--ignore]
-
+    usage: timestomp.py [-h] [--formats] [-i file.txt [file.txt ...]]
+                        [-o file.txt]
+                        [-s cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"]
+                        [-r "%Y-%m-%d %H:%M"] [-y 1997] [-c # #] [--index #]
+                        [--include] [--ignore] [--highlight] [-v]
     optional arguments:
       -h, --help            show this help message and exit
-      --infile file.txt [file.txt ...]
+      --formats             Print the preloaded search formats
+      -i file.txt [file.txt ...], --infile file.txt [file.txt ...]
                             File to parse. - is stdin
-      --outfile file.txt    Output changed lines to this file. Without or -,
+      -o file.txt, --outfile file.txt
+                            Output changed lines to this file. Without or -,
                             results are printed to stdout
-      -s {cli-golive,osx-ls,win-dir-us,web-golive,win-dir-uk}, --search {cli-golive,osx-ls,win-dir-us,web-golive,win-dir-uk}
-                            Type of date/time format that will be found in the
-                            file - you can get a list of available searches using:
-                            ./timestomp.py enquire --search
-      -r "%Y/%m/%d %H:%M:%S", --replace "%Y/%m/%d %H:%M:%S"
-                            Translate the found date/time to this format - you can
-                            get a list of available formats using: ./timestomp.py
-                            enquire --search
+      -s cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M", --search cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"
+                            Type of date/time strftime format that will be found
+                            in the file - you can get a list of available searches
+                            using: timestomp.py --formats
+      -r "%Y-%m-%d %H:%M", --replace "%Y-%m-%d %H:%M"
+                            Translate the found date/time to this strptime format
+                            - you can get a list of available formats using:
+                            timestomp.py formats --search
+      -y 1997, --year 1997  Some dates dont contain the year. Set those dates with
+                            this flag
       -c # #, --cut # #     Start and end position in lines to look for timestamps
                             - cut operation is performed before index evaluation
-      -i #, --index #       Preferred timestamp to convert should there be more
+      --index #             Preferred timestamp to convert should there be more
                             than one match. If there is more than one match and
                             index is not specified, all matches on a line are
                             replaced
@@ -46,7 +49,8 @@ If there is the possibility of the wrong timestamps being converted (or multiple
       --ignore              Ignore non-critical errors. If --include is not
                             specified, lines which would normal generate an error
                             are ommited from output
-
+      --highlight           Highlight the text being changed
+      -v, --verbose         Print debug information to stderr
 
 ## formats\.py
 This file contains a list of common dates and times and their regex.
@@ -77,22 +81,14 @@ If it is possible to have two types of date/time formats in a file then addition
     ],
 The output of OSX `ls` command likes to exclude the year data if that file/directory has been modified in the present year. For that reason, two parsers need to be used. The parsers will be matched in the order they are given, but matches are ordered by the match startpos value.
 
-In the case of a missing year, the year is set to the present.
-
-#### out_strftime
-
-This section allows you to quickly provide a format as a string rather than a format string on the command line. Defaults to '%Y%m%d_%H%M' for easy sorting
+In the case of a missing year, the flag --year must be used to define the year to be output. Otherwise, --ignore can be used to set the year as the present.
 
 ## example_import\.py
 
 This file gives examples to how to utilise the functions in another script. Explanations embedded in the file
 
-## Alias
+## Aliases
 
 Add the following to your.bashrc (etc.) to limit typing!
 
     alias us2dfir='timestomp.py generic --infile - --outfile - -s us-slash --ignore --include'
-
-## Possible next steps:
-
-- Integrate into a simple Django app for easier use and auto upload to certain services
