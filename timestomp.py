@@ -5,6 +5,7 @@ import re
 import csv
 import sys
 import logging
+import os.path
 from datetime import datetime
 
 _version_ = '1.0'
@@ -78,15 +79,15 @@ def time2re(fmt_string, regex=True):
     'B': '(?:January|February|March|April|May|June|July|August|September|October|November|December)',
     'm': '(0[1-9]|1[012])',
     '-m': '[1-12]{1,2}',
-    'y': '[0-9]{2}',    # Modded
-    'Y': '[0-9]{4}',    # Modded
+    'y': '[0-9]{2}',    ## Modded
+    'Y': '[0-9]{4}',    ## Modded
     'H': '[0-2][0-9]',
     '-H': '[0-9]{1,2}',
     'I': '[0-1][0-9]',
     '-I': '[0-9]{1,2}',
     'p': '[AP]M',
-    'M': '[0-5][0-9]',   # Modded
-    '-M': '[0-59]{1,2}',  # Modded
+    'M': '[0-5][0-9]',   ## Modded
+    '-M': '[0-59]{1,2}',  ## Modded
     'S': '[0-5][0-9]',
     '-S': '[0-9]{1,2}',
     'f': '[0-9]{6}',
@@ -128,7 +129,7 @@ def match(line, searches, line_no=None, index=None, cut=False, ignore=False, inc
     start = 0
     end = len(line)
 
-  # For each of the search types get matches
+  # # For each of the search types get matches
   matches = []
   for s in searches:
 
@@ -138,8 +139,8 @@ def match(line, searches, line_no=None, index=None, cut=False, ignore=False, inc
     matches += list((strptime, match) for match in regex.finditer(line, start, end))
 
 
-  # Reorder the matches otherwise index is going to be wrong
-  # There is no guarantee that the order we found the matches in are in order
+  # # Reorder the matches otherwise index is going to be wrong
+  # # There is no guarantee that the order we found the matches in are in order
   order = []
   for m in matches:
     strptime, match = m
@@ -148,7 +149,7 @@ def match(line, searches, line_no=None, index=None, cut=False, ignore=False, inc
 
   matches = [x for _,x in sorted(zip(order, matches))]
 
-  # Only return the correct match if index is set
+  # # Only return the correct match if index is set
   if type(index) == int:
     try:
        return [matches[index]]
@@ -158,24 +159,24 @@ def match(line, searches, line_no=None, index=None, cut=False, ignore=False, inc
       else:
         raise MatchIndexError('Index does not exist: [{}] "{}"'.format(line_no, [line]))
 
-  # No matches
+  # # No matches
   elif len(matches) == 0:
     if (ignore or include):
       return
     else:
       raise NoMatchError('No matches: [{}] "{}"'.format(line_no, [line]))
 
-  # Only one match - OK
+  # # Only one match - OK
   elif len(matches) == 1:
     return matches
 
-  # index not defined so return all
+  # # index not defined so return all
   else:
     return matches
 
 def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offset=False, year=False, highlight=False):
 
-  # If given an offset, it is presumed the start and end values will need adjusting
+  # # If given an offset, it is presumed the start and end values will need adjusting
   start, end = matchobj.start(), matchobj.end()
   if offset:
     start += offset
@@ -183,7 +184,7 @@ def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offs
 
   old_date = line[start:end]
 
-  # Try and parse the old date to datetime - if it fails make sure we have ignore
+  # # Try and parse the old date to datetime - if it fails make sure we have ignore
   try:
     new_date = datetime.strptime(old_date, strptime)
   except ValueError as e:
@@ -192,7 +193,7 @@ def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offs
     else:
       return
 
-  # Some timestamps dont include a year
+  # # Some timestamps dont include a year
   if new_date.year == 1900:
     if ignore and not year:
       new_date.year = datetime.now().year
@@ -201,10 +202,10 @@ def replace(line, strftime, strptime, matchobj, line_no=None, ignore=False, offs
     else:
       new_date = new_date.replace(year=year)
 
-  # Get the new timestamp as a string using args.replace value
+  # # Get the new timestamp as a string using args.replace value
   new_date_str = new_date.strftime(strftime)
 
-  # Construct new line, highlight selections if asked
+  # # Construct new line, highlight selections if asked
   if highlight:
     new_line = '{}\033[1;41m{}\033[0m{}'.format(line[:start], new_date_str, line[end:])
   else:
@@ -244,11 +245,11 @@ if __name__ == '__main__':
   if args.verbose:
     logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.DEBUG)
   else:
-    logging.basicConfig(stream=sys.stderr, format='Verbose | %(levelname)s | %(message)s', level=logging.CRITICAL)
+    logging.basicConfig(stream=sys.stderr, format='*** %(levelname)s | %(message)s', level=logging.CRITICAL)
 
   log = logging.getLogger('timestomper')
 
-
+  # # Show the formats
   if args.formats:
     print('\nSearch formats:')
 
@@ -313,31 +314,40 @@ Code    Meaning                                                             Exam
   else:
 
     if not args.search:
+        print('\n*** Required:\t[-s cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"]\n')
         parser.print_help()
         exit(0)
 
-    # Check replace format
+    # # Check replace format
     if args.replace in fmts.out_strftime:
       args.replace = fmts.out_strftime[args.replace]
       log.debug('Output date format "{}"'.format(args.replace))
     else:
       log.debug('Custom output date format "{}"'.format(args.replace))
 
-    # Check cut is sensible - check if the starting cut is before end
+    # # Check cut is sensible - check if the starting cut is before end
     if args.cut and (not args.cut[0] < args.cut[1]):
       log.critical('Error with --cut - start greater than end: {} < {}'.format(args.cut[0], args.cut[1]))
       exit(1)
 
+    # # Check the file is valid
+    for file in args.infile:
+      if not file == '-' and not os.path.isfile(file):
+        log.critical('Exiting, cannot find file: {}'.format(file))
+        exit(1)
+
     write_file = writef(args.outfile)
     write_file = write_file.get_file_obj()
 
-
+    # # Check the searches
     if args.search in fmts.searches:
       searches = fmts.searches[args.search]
     else:
       searches = [{'regex': time2re(args.search), 'strptime': args.search}]
 
+    log.debug('Using the following search(s): {}'.format(searches))
 
+    # # Main loop
     for file in args.infile:
       for line_no, line in loadf(file):
 
@@ -345,14 +355,14 @@ Code    Meaning                                                             Exam
 
         if matches:
 
-          # We need to calcualte the offset if multiple matches need to be replaced
-          # The new time format is probably not the same length as the old one
+          # # We need to calcualte the offset if multiple matches need to be replaced
+          # # The new time format is probably not the same length as the old one
           new_line = line
           new_line_len = prev_line_len = len(new_line)
 
           for m in matches:
 
-            # An offset is needed as we change the length of the line with each replace
+            # # An offset is needed as we change the length of the line with each replace
             offset = abs(prev_line_len - new_line_len)
             if new_line_len < prev_line_len:
               offset = offset * -1
@@ -372,13 +382,15 @@ Code    Meaning                                                             Exam
               raise ReplaceError(('Replace failed: [{}] "{}"'.format(line_no, [line])))
 
 
-        # This line didn't match, but we were asked to include non-matching
+        # # This line didn't match, but we were asked to include non-matching
         elif args.include:
-          log.debug('No match, but included | {}'.format([line]))
+          log.debug('No match, but --include used | {}'.format([line]))
           write_file.write((line_no, line))
 
-        # The line didn't match, and we don't care about them
+        # # The line didn't match, and we don't care about them
         elif args.ignore:
+          log.debug('No match and --ignore used | {}'.format([line]))
+
           continue
 
     write_file.close()
