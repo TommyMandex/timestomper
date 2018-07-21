@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
+from __future__ import print_function
 import re
 import csv
 import sys
 import logging
 from datetime import datetime
-from __future__ import print_function
 
 
 import formats as fmts
