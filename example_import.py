@@ -28,23 +28,23 @@ f = writef('-')
 # for line_no, line in lines:
 for line_no, line in loadf('./examples/free-win7-dir-uk.txt'):
 
-	# Returns a list of match objects given the regex and strptime
-	searches = [ {
-		'regex': '(\\d{2}\\/\\d{2}\\/\\d{4}\\s\\s\\d{2}\\:\\d{2})',
-		'strptime': '%d/%m/%Y  %H:%M'
-	}]
-	matches = match(line, searches, line_no=line_no, index=None, cut=False, ignore=True, include=True)
+    # Returns a list of match objects given the regex and strptime
+    searches = [ {
+        'regex': '(\\d{2}\\/\\d{2}\\/\\d{4}\\s\\s\\d{2}\\:\\d{2})',
+        'strptime': '%d/%m/%Y  %H:%M'
+    }]
+    matches = match(line, searches, line_no=line_no, index=None, cut=False, ignore=True, include=True)
 
-	# For this example just take the first one
-	if matches:
-		strptime, m = matches[0]
+    # For this example just take the first one
+    if matches:
+        strptime, m = matches[0]
 
-		# Replace the matches given the strftime format
-		strftime = '%s'
-		line = replace(line_no=line_no, line=line, strftime=strftime, strptime=strptime, matchobj=m, ignore=True)
+        # Replace the matches given the strftime format
+        strftime = '%s'
+        line = replace(line_no=line_no, line=line, strftime=strftime, strptime=strptime, matchobj=m, ignore=True)
 
-		# Reward!!
-	print([line_no, line])
+        # Reward!!
+    print([line_no, line])
 
 # Finally, close the output file
 f.close()
