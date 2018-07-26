@@ -369,14 +369,13 @@ Code    Meaning                                                             Exam
 
             strptime, matchobj = m
 
-            new_line = replace(line_no=line_no, line=new_line, strftime=args.replace, strptime=strptime, matchobj=matchobj, ignore=args.ignore, offset=offset, year=args.year, highlight=args.test)
+            new_line = replace(line_no=line_no, line=new_line, strftime=args.replace, strptime=strptime, matchobj=matchobj, ignore=args.ignore, offset=offset, year=args.year, highlight=args.highlight)
             new_line_len = len(new_line)
-
 
           if new_line:
             write_file.write((line_no, new_line))
           else:
-            if args.test:
+            if args.highlight:
               raise ReplaceError(('Highlight failed: [{}] "{}"'.format(line_no, [line])))
             else:
               raise ReplaceError(('Replace failed: [{}] "{}"'.format(line_no, [line])))
