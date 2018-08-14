@@ -13,44 +13,47 @@ If there is the possibility of the wrong timestamps being converted (or multiple
 
 
 ## \-\-help
+```
+  usage: timestomp.py [-h] [--formats] [-i file.txt [file.txt ...]]
+                      [-o file.txt]
+                      [-s cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"]
+                      [-r "%Y-%m-%d %H:%M"] [-y 1997] [-c #-#] [--index #]
+                      [--include] [--ignore] [--highlight] [-v]
 
-    usage: timestomp.py [-h] [--formats] [-i file.txt [file.txt ...]]
-                        [-o file.txt]
-                        [-s cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"]
-                        [-r "%Y-%m-%d %H:%M"] [-y 1997] [-c # #] [--index #]
-                        [--include] [--ignore] [--highlight] [-v]
-    optional arguments:
-      -h, --help            show this help message and exit
-      --formats             Print the preloaded search formats
-      -i file.txt [file.txt ...], --infile file.txt [file.txt ...]
-                            File to parse. - is stdin
-      -o file.txt, --outfile file.txt
-                            Output changed lines to this file. Without or -,
-                            results are printed to stdout
-      -s cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M", --search cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"
-                            Type of date/time strftime format that will be found
-                            in the file - you can get a list of available searches
-                            using: timestomp.py --formats
-      -r "%Y-%m-%d %H:%M", --replace "%Y-%m-%d %H:%M"
-                            Translate the found date/time to this strptime format
-                            - you can get a list of available formats using:
-                            timestomp.py formats --search
-      -y 1997, --year 1997  Some dates dont contain the year. Set those dates with
-                            this flag
-      -c # #, --cut # #     Start and end position in lines to look for timestamps
-                            - cut operation is performed before index evaluation
-      --index #             Preferred timestamp to convert should there be more
-                            than one match. If there is more than one match and
-                            index is not specified, all matches on a line are
-                            replaced
-      --include             Include non-matching lines with output - helps with
-                            free-form text files. If used with --ignore, --ignore
-                            is, ignored :)
-      --ignore              Ignore non-critical errors. If --include is not
-                            specified, lines which would normal generate an error
-                            are ommited from output
-      --highlight           Highlight the text being changed
-      -v, --verbose         Print debug information to stderr
+  optional arguments:
+    -h, --help            show this help message and exit
+    --formats             Print the preloaded search formats
+    -i file.txt [file.txt ...], --infile file.txt [file.txt ...]
+                          File to parse. - is stdin
+    -o file.txt, --outfile file.txt
+                          Output changed lines to this file. Without or -,
+                          results are printed to stdout
+    -s cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M", --search cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"
+                          Type of date/time strftime format that will be found
+                          in the file - you can get a list of available searches
+                          using: timestomp.py --formats
+    -r "%Y-%m-%d %H:%M", --replace "%Y-%m-%d %H:%M"
+                          Translate the found date/time to this strptime format
+                          - you can get a list of available formats using:
+                          timestomp.py formats --search
+    -y 1997, --year 1997  Some dates dont contain the year. Set those dates with
+                          this flag
+    -c #-#, --cut #-#     Start and end position in lines to look for timestamps
+                          - same as Linux cut syntax (10-15, -10, 10- etc.) cut
+                          operation is performed before index evaluation
+    --index #             Preferred timestamp to convert should there be more
+                          than one match. If there is more than one match and
+                          index is not specified, all matches on a line are
+                          replaced
+    --include             Include non-matching lines with output - helps with
+                          free-form text files. If used with --ignore, --ignore
+                          is, ignored :)
+    --ignore              Ignore non-critical errors. If --include is not
+                          specified, lines which would normal generate an error
+                          are ommited from output
+    --highlight           Highlight the text being changed
+    -v, --verbose         Print debug information to stderr
+```
 
 ## formats\.py
 This file contains a list of common dates and times and their regex.
