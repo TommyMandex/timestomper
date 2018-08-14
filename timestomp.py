@@ -120,11 +120,26 @@ def time2re(fmt_string, regex=True):
 
   return (''.join(final_re)) if regex else ''.join(final_re)
 
+def parse_cut(cut):
+
+  if '-' in cut:
+      start, end = cut.split('-')
+
+      start = int(start) if start is not '' else 0
+      end = int(end) if end is not '' else None
+
+  else:
+      start = 0
+      end = int(cut)
+
+  return start, end
+
 
 def match(line, searches, line_no=None, index=None, cut=False, ignore=False, include=True):
 
   if cut:
     start, end = cut
+    end = len(line) if end is None else end
   else:
     start = 0
     end = len(line)
@@ -230,7 +245,7 @@ if __name__ == '__main__':
   parser.add_argument('-r', '--replace', type=str, default='default', metavar='"%Y-%m-%d %H:%M"', help='Translate the found date/time to this strptime format - you can get a list of available formats using: {} formats --search'.format(sys.argv[0]))
   parser.add_argument('-y', '--year', type=int, default=False, metavar='1997', help='Some dates dont contain the year. Set those dates with this flag')
 
-  parser.add_argument('-c', '--cut', type=int, nargs=2, metavar='#', help='Start and end position in lines to look for timestamps - cut operation is performed before index evaluation')
+  parser.add_argument('-c', '--cut', type=str, metavar='#-#', help='Start and end position in lines to look for timestamps - same as Linux cut syntax (10-15, -10, 10- etc.) cut operation is performed before index evaluation')
   parser.add_argument('--index', type=int, default=None, metavar='#', help='Preferred timestamp to convert should there be more than one match. If there is more than one match and index is not specified, all matches on a line are replaced')
 
   parser.add_argument('--include', action='store_true', help='Include non-matching lines with output - helps with free-form text files. If used with --ignore, --ignore is, ignored :)')
@@ -326,9 +341,12 @@ Code    Meaning                                                             Exam
       log.debug('Custom output date format "{}"'.format(args.replace))
 
     # # Check cut is sensible - check if the starting cut is before end
-    if args.cut and (not args.cut[0] < args.cut[1]):
-      log.critical('Error with --cut - start greater than end: {} < {}'.format(args.cut[0], args.cut[1]))
-      exit(1)
+    if args.cut:
+      args.cut = (parse_cut(args.cut))
+
+      if args.cut[0] < args.cut[1]:
+        log.critical('Error with --cut - start greater than end: {} < {}'.format(args.cut[0], args.cut[1]))
+        exit(1)
 
     # # Check the file is valid
     for file in args.infile:
