@@ -73,12 +73,10 @@ def time2re(fmt_string, regex=True):
     'a': '(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)',
     'A': '(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)',
     'w': '[0-6]',
-    'd': '[0-3][0-9]',
-    '-d': '[0-9]{1,2}',
+    'd': '(?:0[1-9]|[12][0-9]|3[01]|[1-3]?[0-9])',
     'b': '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)',
     'B': '(?:January|February|March|April|May|June|July|August|September|October|November|December)',
-    'm': '(0[1-9]|1[012])',
-    '-m': '[1-12]{1,2}',
+    'm': '(0[1-9]|1[012]|[1-12]{1,2})',
     'y': '[0-9]{2}',    ## Modded
     'Y': '[0-9]{4}',    ## Modded
     'H': '[0-2][0-9]',
@@ -234,11 +232,11 @@ if __name__ == '__main__':
 
   import argparse
 
-  parser = argparse.ArgumentParser()
+  parser = argparse.ArgumentParser(description='This app converts timestamps in text files, line-by-line. It was made to combat the non-standardised date/time fields tools output.')
 
   parser.add_argument('--formats', action='store_true', help='Print the preloaded search formats')
 
-  parser.add_argument('-i', '--infile', type=str, default='-', nargs='+', metavar='file.txt', help='File to parse. - is stdin')
+  parser.add_argument('-i', '--infile', type=str, default='-', nargs='+', metavar='file.txt', help='File to parse. - is stdin - *Must be UTF-8...*')
   parser.add_argument('-o', '--outfile', type=str, default='-', metavar='file.txt', help='Output changed lines to this file. Without or -, results are printed to stdout')
 
   parser.add_argument('-s', '--search', type=str, metavar='{} OR "%Y-%m-%d %H:%M"'.format(', '.join(fmts.searches.keys()[:3])), help='Type of date/time strftime format that will be found in the file - you can get a list of available searches using: {} --formats'.format(sys.argv[0]))
