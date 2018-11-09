@@ -354,6 +354,7 @@ Code    Meaning                                                             Exam
 
     write_file = writef(args.outfile)
     write_file = write_file.get_file_obj()
+    to_stdout = ( True if write_file.outFile.name == '<stdout>' else False )
 
     # # Check the searches
     if args.search in fmts.searches:
@@ -362,6 +363,12 @@ Code    Meaning                                                             Exam
       searches = [{'regex': time2re(args.search), 'strptime': args.search}]
 
     log.debug('Using the following search(s): {}'.format(searches))
+
+    # # Check that we are only using --highlight when outputting to stdout, rather than to a file
+    if not to_stdout and args.highlight:
+      args.highlight = False
+      log.warning('--highlight specified, but saving to file... This could cause issues so highlight has been disabled. If you still need it use stdout redirect to a file instead.')
+
 
     # # Main loop
     for file in args.infile:
