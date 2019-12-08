@@ -16,7 +16,7 @@ If there is the possibility of the wrong timestamps being converted (or multiple
 ```
   usage: timestomp.py [-h] [--formats] [-i file.txt [file.txt ...]]
                       [-o file.txt]
-                      [-s cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"]
+                      [-s us-hyphen, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"]
                       [-r "%Y-%m-%d %H:%M"] [-y 1997] [-c #-#] [--index #]
                       [--include] [--ignore] [--highlight] [-v]
 
@@ -28,7 +28,7 @@ If there is the possibility of the wrong timestamps being converted (or multiple
     -o file.txt, --outfile file.txt
                           Output changed lines to this file. Without or -,
                           results are printed to stdout
-    -s cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M", --search cli-golive, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"
+    -s us-hyphen, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M", --search us-hyphen, osx-ls, us-slash-no_secs OR "%Y-%m-%d %H:%M"
                           Type of date/time strftime format that will be found
                           in the file - you can get a list of available searches
                           using: timestomp.py --formats
